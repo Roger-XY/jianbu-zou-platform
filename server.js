@@ -67,7 +67,7 @@ function createMulter(weekId, username) {
 
   return multer({
     storage: multer.diskStorage({
-      destination: () => userDir,
+      destination: (req, file, cb) => cb(null, userDir),
       filename: (req, file, cb) => {
         const timestamp = Date.now();
         const safeBaseName = file.originalname.replace(/[^a-zA-Z0-9\u4e00-\u9fa5._-]/g, '_');
@@ -166,7 +166,7 @@ app.post('/api/admin/users', requireAdmin, (req, res) => {
 // ============================================================
 
 // 获取所有周（带当前用户上传状态）
-// 普通用户只返回近2周（本周、上周），管理员返回全部
+// 普通用户返回近2周（本周、上周），基于实时日期自动计算，管理员返回全部
 app.get('/api/weeks', requireAuth, (req, res) => {
   const isAdmin = req.user.role === 'admin';
   // 管理员取全部，普通用户取最近2周（本周、上周）
@@ -212,14 +212,23 @@ app.get('/api/weeks/:id', requireAuth, (req, res) => {
 // ============================================================
 
 app.post('/api/upload', requireAuth, (req, res, next) => {
-  const { week_id } = req.body;
-  if (!week_id) return res.status(400).json({ success: false, message: '缺少 week_id 参数' });
+  // week_id 优先从 query string 读取（?week_id=xxx），兼容 form body
+  // 注意：multipart 请求中 req.body 在 multer 解析前为空，
+  // 因此前端应将 week_id 放在 URL query 参数而非 form body 中。
+  const week_id = req.query.week_id;
+
+  console.log(`[${now()}] 上传请求 - week_id: ${week_id}, user: ${req.user.username}`);
+
+  if (!week_id) {
+    return res.status(400).json({ success: false, message: '缺少 week_id 参数（请通过 URL query 传递：?week_id=xxx）' });
+  }
 
   const week = WeekDB.getById(week_id);
   if (!week) return res.status(404).json({ success: false, message: '周文件夹不存在' });
   if (week.status === 'completed') return res.status(400).json({ success: false, message: '该周已上传完毕，无法继续上传' });
 
   try {
+    // 单次 multer 调用，用磁盘存储写文件
     const uploader = createMulter(week_id, req.user.username);
     uploader.array('images', 20)(req, res, err => {
       if (err) {
@@ -254,13 +263,19 @@ app.get('/api/images/:week_id', requireAuth, (req, res) => {
   if (!week) return res.status(404).json({ success: false, message: '周不存在' });
 
   if (req.user.role === 'admin') {
-    // 管理员：返回所有用户的图片
+    // 管理员：返回所有用户的图片 + 确认记录
     const subfolders = getWeekSubfolders(week.folder_name);
+    // 补充 display_name
+    subfolders.forEach(sf => {
+      const u = UserDB.findByUsername(sf.username);
+      if (u) sf.display_name = u.display_name;
+    });
     const allImages = {};
     subfolders.forEach(sf => {
       allImages[sf.username] = getUserFiles(week.folder_name, sf.username);
     });
-    return res.json({ success: true, subfolders, allImages });
+    const records = RecordDB.getByWeek(week.id);
+    return res.json({ success: true, subfolders, allImages, records });
   } else {
     // 普通用户：只返回自己的
     const files = getUserFiles(week.folder_name, req.user.username);

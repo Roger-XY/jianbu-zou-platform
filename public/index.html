@@ -54,8 +54,11 @@
     .role-chip {
       font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600;
     }
+    .role-chip.clickable { cursor: pointer; transition: opacity 0.15s; }
+    .role-chip.clickable:hover { opacity: 0.8; }
     .role-admin { background: var(--warning-light); color: #92400e; }
     .role-user { background: #dbeafe; color: #1e40af; }
+    .role-switch-icon { font-size: 10px; margin-left: 4px; opacity: 0.7; }
     .btn-ghost {
       background: none; border: none; color: var(--gray-500);
       font-size: 13px; cursor: pointer; padding: 6px 10px;
@@ -426,6 +429,100 @@
     .btn-xs-danger { background: var(--error-light); color: #991b1b; }
     .btn-xs-success { background: var(--success-light); color: #065f46; }
 
+    /* ========== 管理员专属区块 ========== */
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px; gap: 12px;
+    }
+    .section-title { font-size: 15px; font-weight: 700; color: var(--gray-800); }
+
+    .admin-upload-area { margin-bottom: 16px; }
+    .admin-upload-area .upload-zone { cursor: pointer; }
+
+    #admin-week-select, #admin-detail-week-select {
+      padding: 6px 10px; border-radius: 8px; border: 1px solid var(--gray-200);
+      font-size: 13px; color: var(--gray-700); background: white; outline: none;
+    }
+
+    /* ========== 文件夹导航 ========== */
+    .breadcrumb {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 13px; color: var(--gray-500);
+      margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .breadcrumb-item {
+      color: var(--primary); cursor: pointer; font-weight: 600;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .breadcrumb-item:hover { background: var(--primary-bg); }
+    .breadcrumb-sep { color: var(--gray-400); }
+    .breadcrumb-current { color: var(--gray-700); font-weight: 600; }
+
+    /* 文件夹网格 */
+    .folder-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 10px;
+    }
+    @media (min-width: 640px) {
+      .folder-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .folder-card {
+      background: white; border-radius: var(--radius);
+      padding: 14px 12px; text-align: center;
+      cursor: pointer; transition: all 0.15s;
+      box-shadow: var(--shadow); border: 1px solid rgba(226,232,240,0.6);
+    }
+    .folder-card:active { transform: scale(0.97); background: var(--gray-50); }
+    .folder-card-icon { font-size: 32px; margin-bottom: 6px; }
+    .folder-card-name {
+      font-size: 13px; font-weight: 600; color: var(--gray-700);
+      word-break: break-all; line-height: 1.3;
+    }
+    .folder-card-meta { font-size: 11px; color: var(--gray-400); margin-top: 4px; }
+
+    /* 周详情导航内容 */
+    .detail-summary {
+      display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .detail-user-card {
+      background: white; border-radius: var(--radius); padding: 14px 16px;
+      margin-bottom: 12px; box-shadow: var(--shadow);
+    }
+    .detail-user-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .detail-user-name { font-size: 14px; font-weight: 700; color: var(--gray-800); }
+    .detail-user-meta { display: flex; gap: 6px; align-items: center; }
+    .detail-gallery {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 6px;
+    }
+    .detail-gallery .gallery-item { aspect-ratio: 1; border-radius: 6px; overflow: hidden; }
+
+    /* 用户文件夹卡片（可点击进入） */
+    .user-folder-card {
+      background: white; border-radius: var(--radius);
+      padding: 12px; cursor: pointer; transition: all 0.15s;
+      box-shadow: var(--shadow); border: 1px solid rgba(226,232,240,0.6);
+    }
+    .user-folder-card:active { transform: scale(0.97); background: var(--gray-50); }
+    .user-folder-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .user-folder-icon { font-size: 28px; }
+    .user-folder-info { flex: 1; min-width: 0; }
+    .user-folder-name { font-size: 14px; font-weight: 700; color: var(--gray-800); }
+    .user-folder-sub { font-size: 11px; color: var(--gray-400); }
+    .user-folder-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+    .user-folder-gallery {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+      margin-top: 8px;
+    }
+    .user-folder-gallery img {
+      width: 100%; aspect-ratio: 1; object-fit: cover;
+      border-radius: 4px;
+    }
+
     /* ========== 桌面端（min-width: 640px） ========== */
     @media (min-width: 640px) {
       .main-content { padding: calc(var(--header-height) + 20px) 20px calc(var(--tab-height) + 20px); }
@@ -433,6 +530,8 @@
       .top-bar { max-width: 640px; left: 50%; transform: translateX(-50%); }
       .top-bar, .week-tabs { right: auto; }
       .gallery { grid-template-columns: repeat(4, 1fr); }
+      .detail-gallery { grid-template-columns: repeat(6, 1fr); }
+      .folder-grid { grid-template-columns: repeat(4, 1fr); }
     }
   </style>
 </head>
@@ -445,7 +544,7 @@
     <span>健步走上传</span>
   </div>
   <div class="top-bar-right" id="nav-right" style="display:none">
-    <span class="role-chip" id="nav-role"></span>
+    <span class="role-chip clickable" id="nav-role" onclick="toggleViewMode()"></span>
     <button class="btn-ghost" onclick="logout()">退出</button>
   </div>
 </nav>
@@ -547,8 +646,22 @@
       <div id="confirm-section"></div>
     </div>
 
-    <!-- ========== 管理员面板 ========== -->
-    <div class="main-content" id="admin-page">
+<!-- ========== 管理员面板 ========== -->
+<div class="main-content" id="admin-page">
+
+  <!-- 管理员专属：周详情区块（文件夹导航） -->
+      <div id="admin-week-detail-section" style="display:none">
+        <div class="section-header">
+          <div class="section-title">🔍 周详情</div>
+          <select id="admin-detail-week-select" onchange="onAdminDetailWeekChange(this.value)">
+            <option value="">-- 选择周 --</option>
+          </select>
+        </div>
+        <!-- 面包屑导航 -->
+        <div class="breadcrumb" id="detail-breadcrumb"></div>
+        <!-- 动态内容区域 -->
+        <div id="detail-content-area"></div>
+      </div>
 
       <div class="admin-tabs">
         <button class="tab-btn active" id="tab-btn-users" onclick="switchTab('tab-users')">👥 用户</button>
@@ -654,6 +767,7 @@ let selectedWeek = null;
 let uploadQueue = [];
 let isUploading = false;
 let isAdmin = false;
+let viewMode = 'admin';  // 'admin' 或 'user'
 
 // ============================================================
 // 初始化
@@ -673,21 +787,53 @@ async function checkAuth() {
 function showApp(user) {
   currentUser = user;
   isAdmin = user.role === 'admin';
+  // 管理员默认进入管理员视图，普通用户直接进入用户视图
+  viewMode = isAdmin ? 'admin' : 'user';
 
   document.getElementById('login-page').style.display = 'none';
   document.getElementById('app-page').classList.add('show');
   document.getElementById('nav-right').style.display = 'flex';
-  document.getElementById('nav-role').textContent = user.role === 'admin' ? '管理员' : '普通用户';
-  document.getElementById('nav-role').className = 'role-chip ' + (isAdmin ? 'role-admin' : 'role-user');
 
+  updateNavRole();
+  updateViewMode();
+}
+
+function updateNavRole() {
+  const el = document.getElementById('nav-role');
   if (isAdmin) {
+    const switchText = viewMode === 'admin' ? '切换用户视图' : '切换管理员视图';
+    el.innerHTML = (viewMode === 'admin' ? '管理员' : '普通用户') +
+      `<span class="role-switch-icon">⇄</span>`;
+    el.title = switchText;
+    el.className = 'role-chip role-admin clickable';
+  } else {
+    el.textContent = '普通用户';
+    el.className = 'role-chip role-user';
+  }
+}
+
+function toggleViewMode() {
+  if (!isAdmin) return;
+  viewMode = viewMode === 'admin' ? 'user' : 'admin';
+  updateNavRole();
+  updateViewMode();
+  // 如果切换到用户视图，重新加载用户面板
+  if (viewMode === 'user') {
+    document.getElementById('week-tabs').classList.remove('hidden');
+    loadUserPanel();
+  } else {
     document.getElementById('week-tabs').classList.add('hidden');
     loadAdminPanel();
+  }
+}
+
+function updateViewMode() {
+  if (viewMode === 'admin') {
+    document.getElementById('admin-page').classList.add('show');
+    document.getElementById('user-content').style.display = 'none';
   } else {
-    document.getElementById('week-tabs').classList.remove('hidden');
     document.getElementById('admin-page').classList.remove('show');
     document.getElementById('user-content').style.display = '';
-    loadUserPanel();
   }
 }
 
@@ -771,30 +917,16 @@ async function loadUserPanel() {
     // 渲染底部标签栏
     renderWeekTabs();
 
-    // 默认选中"上周"（本周的前一个）
-    // 找到本周的索引，然后选中上周
-    const today = new Date().toISOString().slice(0, 10);
-    let thisWeekIdx = -1;
+    // 服务端已保证返回 [上周, 本周] 两条（若均存在）
+    // 默认选中"上周"（索引 0）；若只有 1 条则选第一条
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let defaultIdx = 0;
+    // 找出真正的"上周"（week_end < today）
     for (let i = 0; i < recentWeeks.length; i++) {
-      if (today >= recentWeeks[i].week_start && today <= recentWeeks[i].week_end) {
-        thisWeekIdx = i;
-        break;
+      if (recentWeeks[i].week_end < todayStr) {
+        defaultIdx = i;
       }
     }
-    // 如果今天不在任何周内，找第一个未来的周作为本周
-    if (thisWeekIdx === -1) {
-      for (let i = 0; i < recentWeeks.length; i++) {
-        if (recentWeeks[i].week_start > today) {
-          thisWeekIdx = i;
-          break;
-        }
-      }
-    }
-    // 如果还是没找到，默认第一个为本周
-    if (thisWeekIdx === -1) thisWeekIdx = 0;
-
-    // 默认选中上周（本周索引 - 1）
-    let defaultIdx = thisWeekIdx > 0 ? thisWeekIdx - 1 : thisWeekIdx;
     selectWeekByIndex(defaultIdx);
   } catch(e) { 
     console.error('加载失败:', e);
@@ -811,50 +943,31 @@ function renderWeekTabs() {
     return;
   }
 
-  // 根据日期计算标签
-  // 今天
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10);
-  
-  // 找到"本周"的索引（今天在这个周范围内）
-  let thisWeekIdx = -1;
-  for (let i = 0; i < recentWeeks.length; i++) {
-    const w = recentWeeks[i];
-    if (todayStr >= w.week_start && todayStr <= w.week_end) {
-      thisWeekIdx = i;
-      break;
+  // 服务端已保证 recentWeeks = [上周, 本周]（按 year+week_number 升序）
+  // 在前端再基于实时日期推算一遍，保证 label 100% 正确
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  function getLabel(w, i) {
+    if (todayStr >= w.week_start && todayStr <= w.week_end) return '本周';
+    if (w.week_end < todayStr) {
+      // 看与本周差几周
+      const diffDays = (new Date(todayStr) - new Date(w.week_start)) / 86400000;
+      const diffWeeks = Math.round(diffDays / 7);
+      return diffWeeks === 1 ? '上周' : `前${diffWeeks}周`;
     }
+    const diffDays = (new Date(w.week_start) - new Date(todayStr)) / 86400000;
+    const diffWeeks = Math.round(diffDays / 7);
+    return diffWeeks <= 1 ? '下周' : `后${diffWeeks}周`;
   }
-  
-  // 如果今天不在任何一周内，找最近的未来周作为"本周"
-  if (thisWeekIdx === -1) {
-    for (let i = 0; i < recentWeeks.length; i++) {
-      if (recentWeeks[i].week_start > todayStr) {
-        thisWeekIdx = i;
-        break;
-      }
-    }
-  }
-  // 如果还是没找到，默认第一个为本周
-  if (thisWeekIdx === -1) thisWeekIdx = 0;
-  
-  // 生成标签
-  const labels = recentWeeks.map((w, i) => {
-    const diff = i - thisWeekIdx;
-    if (diff === 0) return '本周';
-    if (diff === -1) return '上周';
-    if (diff === 1) return '下周';
-    if (diff < 0) return `前${Math.abs(diff)}周`;
-    return `后${diff}周`;
-  });
-  
+
   container.innerHTML = recentWeeks.map((w, i) => {
     const isDone = w.my_status === 'completed';
     const isActive = selectedWeek && selectedWeek.id === w.id;
+    const label = getLabel(w, i);
     return `
       <button class="week-tab ${isActive ? 'active' : ''}" id="tab-${i}" onclick="selectWeekByIndex(${i})">
         <span class="week-tab-icon">${isDone ? '✅' : '📷'}</span>
-        <span class="week-tab-label">${labels[i]}</span>
+        <span class="week-tab-label">${label}</span>
         <span class="week-tab-sub">${fmtDateShort(w.week_start)}~${fmtDateShort(w.week_end)}</span>
       </button>
     `;
@@ -943,13 +1056,20 @@ function renderWeekContent(w) {
 
 async function loadMyImages() {
   if (!selectedWeek) return;
+  const gallery = document.getElementById('my-gallery');
+  const countEl = document.getElementById('gallery-count');
   try {
     const r = await fetch(`/api/images/${selectedWeek.id}`);
     const d = await r.json();
-    const gallery = document.getElementById('my-gallery');
-    const countEl = document.getElementById('gallery-count');
 
-    if (!d.images || d.images.length === 0) {
+    if (!d.success) {
+      gallery.innerHTML = `<div class="gallery-empty" style="color:#ef4444;font-size:13px">加载失败：${d.message}</div>`;
+      countEl.textContent = '';
+      return;
+    }
+
+    const imgs = d.images || [];
+    if (!imgs.length) {
       gallery.innerHTML = `
         <div class="gallery-empty">
           <div class="gallery-empty-icon">📷</div>
@@ -958,8 +1078,8 @@ async function loadMyImages() {
       countEl.textContent = '';
       return;
     }
-    countEl.textContent = `${d.images.length} 张`;
-    gallery.innerHTML = d.images.map(img => `
+    countEl.textContent = `${imgs.length} 张`;
+    gallery.innerHTML = imgs.map(img => `
       <div class="gallery-item" onclick="previewImg('${img.url}', event)">
         <img class="gallery-img" src="${img.url}" alt="${img.filename}" loading="lazy" />
         <div class="gallery-over">
@@ -968,7 +1088,10 @@ async function loadMyImages() {
         </div>
       </div>
     `).join('');
-  } catch(e) {}
+  } catch(e) {
+    gallery.innerHTML = `<div class="gallery-empty" style="color:#ef4444;font-size:13px">网络错误，请刷新重试</div>`;
+    countEl.textContent = '';
+  }
 }
 
 async function confirmComplete() {
@@ -1076,7 +1199,7 @@ async function startUpload() {
 
   const formData = new FormData();
   pending.forEach(i => formData.append('images', i.file));
-  formData.append('week_id', selectedWeek.id);
+  // week_id 放 URL query 参数，避免 multipart 解析顺序问题
 
   try {
     // 模拟进度
@@ -1086,7 +1209,7 @@ async function startUpload() {
       pfill.style.width = fake + '%';
     }, 200);
 
-    const r = await fetch('/api/upload', { method: 'POST', body: formData });
+    const r = await fetch(`/api/upload?week_id=${encodeURIComponent(selectedWeek.id)}`, { method: 'POST', body: formData });
     clearInterval(fakeInt);
     pfill.style.width = '100%';
 
@@ -1137,14 +1260,472 @@ document.addEventListener('keydown', e => {
 });
 
 // ============================================================
+// 管理员专属：我的上传
+// ============================================================
+let adminSelectedWeek = null;
+let adminUploadQueue = [];
+let adminIsUploading = false;
+
+async function loadAdminUploadSection() {
+  // 仅填充周详情选择器（管理员个人上传已移至用户视图）
+  try {
+    const r = await fetch('/api/weeks');
+    const d = await r.json();
+    if (!d.success) return;
+    const weeks = d.weeks;
+    const options = weeks.map(w => `<option value="${w.id}">${w.folder_name} (${w.week_start}~${w.week_end})</option>`).join('');
+    document.getElementById('admin-detail-week-select').innerHTML = '<option value="">-- 选择周 --</option>' + options;
+  } catch(e) {}
+}
+
+function onAdminWeekChange(weekId) {
+  if (!weekId) {
+    adminSelectedWeek = null;
+    document.getElementById('admin-upload-zone').className = 'upload-zone disabled-zone';
+    document.getElementById('admin-uz-title').textContent = '请先选择周';
+    document.getElementById('admin-my-gallery-wrap').style.display = 'none';
+    return;
+  }
+  const opt = document.getElementById('admin-week-select').selectedOptions[0];
+  adminSelectedWeek = { id: weekId, folder_name: opt.text.split(' (')[0] };
+  document.getElementById('admin-upload-zone').className = 'upload-zone';
+  document.getElementById('admin-uz-title').textContent = '点击选择图片';
+  document.getElementById('admin-my-gallery-wrap').style.display = '';
+  loadAdminMyImages();
+}
+
+function adminHandleFileSelect(e) {
+  adminAddFiles(Array.from(e.target.files));
+  e.target.value = '';
+}
+function adminHandleDrop(e) {
+  e.preventDefault();
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+  if (!files.length) { toast('请拖入图片文件', 'error'); return; }
+  adminAddFiles(files);
+}
+function adminHandleDragOver(e) { e.preventDefault(); }
+function adminHandleDragLeave() {}
+
+function adminAddFiles(files) {
+  const allowed = ['image/jpeg','image/jpg','image/png','image/gif','image/webp','image/bmp'];
+  let added = 0;
+  files.forEach(f => {
+    if (!allowed.includes(f.type)) return;
+    if (f.size > 20*1024*1024) { toast(`"${f.name}" 超过20MB`, 'error'); return; }
+    if (adminUploadQueue.length >= 20) { toast('最多同时上传20张', 'error'); return; }
+    adminUploadQueue.push({ id: Date.now() + Math.random(), file: f, status: 'pending' });
+    added++;
+  });
+  if (added > 0) toast(`已加入 ${added} 张图片`, 'info');
+  adminRenderQueue();
+}
+
+function adminRemoveFromQueue(id) {
+  adminUploadQueue = adminUploadQueue.filter(i => i.id !== id);
+  adminRenderQueue();
+}
+
+function adminClearQueue() {
+  adminUploadQueue = [];
+  adminRenderQueue();
+}
+
+function adminRenderQueue() {
+  const wrap = document.getElementById('admin-upload-queue-wrap');
+  const list = document.getElementById('admin-queue-list');
+  if (!adminUploadQueue.length) { wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden');
+  list.innerHTML = adminUploadQueue.map(item => `
+    <div class="queue-item" id="adqi-${item.id}">
+      <img class="queue-thumb" src="${URL.createObjectURL(item.file)}" alt="" />
+      <div class="queue-info">
+        <div class="queue-name">${item.file.name}</div>
+        <div class="queue-size">${formatSize(item.file.size)}</div>
+      </div>
+      <button class="queue-del" onclick="adminRemoveFromQueue(${item.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+async function startAdminUpload() {
+  const pending = adminUploadQueue.filter(i => i.status === 'pending');
+  if (!pending.length) { toast('没有待上传的文件', 'info'); return; }
+  if (!adminSelectedWeek) { toast('请先选择周', 'error'); return; }
+  if (adminIsUploading) return;
+
+  adminIsUploading = true;
+  const btn = document.getElementById('admin-do-upload-btn');
+  const pbar = document.getElementById('admin-progress-bar');
+  const pfill = document.getElementById('admin-progress-fill');
+  btn.disabled = true;
+  document.getElementById('admin-upload-btn-text').innerHTML = '<span class="spinner"></span>';
+  pbar.style.display = 'block';
+  pfill.style.width = '0%';
+
+  const formData = new FormData();
+  pending.forEach(i => formData.append('images', i.file));
+
+  try {
+    let fake = 0;
+    const fakeInt = setInterval(() => {
+      fake = Math.min(fake + Math.random() * 15, 80);
+      pfill.style.width = fake + '%';
+    }, 200);
+
+    const r = await fetch(`/api/upload?week_id=${encodeURIComponent(adminSelectedWeek.id)}`, { method: 'POST', body: formData });
+    clearInterval(fakeInt);
+    pfill.style.width = '100%';
+
+    const d = await r.json();
+    if (d.success) {
+      toast(`✅ 上传成功 ${d.files.length} 张`, 'success');
+      setTimeout(() => {
+        adminUploadQueue = [];
+        pbar.style.display = 'none';
+        adminRenderQueue();
+        loadAdminMyImages();
+      }, 800);
+    } else {
+      toast('❌ ' + d.message, 'error');
+      pbar.style.display = 'none';
+    }
+  } catch(e) {
+    toast('❌ 上传失败', 'error');
+    pbar.style.display = 'none';
+  } finally {
+    adminIsUploading = false;
+    btn.disabled = false;
+    document.getElementById('admin-upload-btn-text').textContent = '上传';
+  }
+}
+
+async function loadAdminMyImages() {
+  if (!adminSelectedWeek) return;
+  const gallery = document.getElementById('admin-my-gallery');
+  const countEl = document.getElementById('admin-gallery-count');
+  try {
+    const r = await fetch(`/api/images/${adminSelectedWeek.id}`);
+    const d = await r.json();
+
+    if (!d.success) {
+      gallery.innerHTML = `<div class="gallery-empty" style="color:#ef4444;font-size:13px">加载失败：${d.message}</div>`;
+      countEl.textContent = '';
+      return;
+    }
+
+    // 管理员查自己的照片：优先用 allImages（返回所有用户），找不到则用 images（当前登录用户）
+    let myFiles = [];
+    if (d.allImages) {
+      // 管理员数据结构：allImages[username] = []
+      myFiles = d.allImages[currentUser.username] || [];
+    } else if (d.images) {
+      // 普通用户数据结构
+      myFiles = d.images || [];
+    }
+
+    if (!myFiles.length) {
+      gallery.innerHTML = `<div class="gallery-empty">
+        <div class="gallery-empty-icon">📷</div>
+        <div class="gallery-empty-text">还没有上传照片</div>
+      </div>`;
+      countEl.textContent = '';
+      return;
+    }
+    countEl.textContent = `${myFiles.length} 张`;
+    gallery.innerHTML = myFiles.map(img => `
+      <div class="gallery-item" onclick="previewImg('${img.url}', event)">
+        <img class="gallery-img" src="${img.url}" alt="${img.filename}" loading="lazy" />
+        <div class="gallery-over">
+          <button class="g-btn" onclick="previewImg('${img.url}', event)" title="预览">🔍</button>
+          <button class="g-btn del" onclick="adminDeleteImg('${img.filename}', event)" title="删除">🗑</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    gallery.innerHTML = `<div class="gallery-empty" style="color:#ef4444;font-size:13px">网络错误，请刷新重试</div>`;
+    countEl.textContent = '';
+  }
+}
+
+async function adminDeleteImg(filename, e) {
+  e.stopPropagation();
+  if (!confirm(`确认删除 "${filename}"？`)) return;
+  try {
+    const r = await fetch(`/api/images/${adminSelectedWeek.id}/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+    const d = await r.json();
+    if (d.success) { toast('已删除', 'info'); loadAdminMyImages(); }
+    else toast('❌ ' + d.message, 'error');
+  } catch(e) { toast('❌ 网络错误', 'error'); }
+}
+
+// ============================================================
+// 管理员专属：周详情（文件夹导航）
+// ============================================================
+let detailWeekId = null;
+let detailData = null;
+let detailPath = []; // [{type:'week', id, name}, {type:'user', username, name}]
+
+function onAdminDetailWeekChange(weekId) {
+  const section = document.getElementById('admin-week-detail-section');
+  if (!weekId) {
+    section.style.display = 'none';
+    detailWeekId = null;
+    detailData = null;
+    detailPath = [];
+    return;
+  }
+  section.style.display = '';
+  detailWeekId = weekId;
+  const opt = document.getElementById('admin-detail-week-select').selectedOptions[0];
+  const weekName = opt.text.split(' (')[0];
+  loadWeekDetailData(weekId, weekName);
+}
+
+async function loadWeekDetailData(weekId, weekName) {
+  const content = document.getElementById('detail-content-area');
+  content.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:32px">加载中...</div>';
+  try {
+    const r = await fetch(`/api/images/${weekId}`);
+    const d = await r.json();
+    if (!d.success) {
+      content.innerHTML = '<div style="text-align:center;color:#ef4444;padding:16px">加载失败</div>';
+      return;
+    }
+    detailData = d;
+    // 初始化路径：进入周层级
+    detailPath = [{ type: 'week', id: weekId, name: weekName }];
+    renderDetailLevel_Users();
+  } catch(e) {
+    content.innerHTML = '<div style="text-align:center;color:#ef4444;padding:16px">网络错误</div>';
+  }
+}
+
+// 渲染面包屑导航
+function renderBreadcrumb() {
+  const bc = document.getElementById('detail-breadcrumb');
+  if (!detailPath.length) { bc.innerHTML = ''; return; }
+
+  bc.innerHTML = detailPath.map((item, i) => {
+    const isLast = i === detailPath.length - 1;
+    if (isLast) {
+      return `<span class="breadcrumb-current">${item.name}</span>`;
+    }
+    return `
+      <span class="breadcrumb-item" onclick="detailNavTo(${i})">${item.name}</span>
+      <span class="breadcrumb-sep">›</span>
+    `;
+  }).join('');
+}
+
+// 导航到指定层级
+function detailNavTo(index) {
+  detailPath = detailPath.slice(0, index + 1);
+  renderDetailCurrentLevel();
+}
+
+// 返回上级
+function detailGoBack() {
+  if (detailPath.length <= 1) {
+    // 已经是最顶层，关闭周详情
+    document.getElementById('admin-detail-week-select').value = '';
+    document.getElementById('admin-week-detail-section').style.display = 'none';
+    detailWeekId = null;
+    detailData = null;
+    detailPath = [];
+    return;
+  }
+  detailPath.pop();
+  renderDetailCurrentLevel();
+}
+
+function renderDetailCurrentLevel() {
+  const last = detailPath[detailPath.length - 1];
+  if (last.type === 'week') {
+    renderDetailLevel_Users();
+  } else if (last.type === 'user') {
+    renderDetailLevel_UserPhotos(last.username, last.name);
+  }
+}
+
+// 层级1：显示所有用户文件夹
+function renderDetailLevel_Users() {
+  const content = document.getElementById('detail-content-area');
+  const subfolders = detailData.subfolders || [];
+  const allImages = detailData.allImages || {};
+
+  // 确认状态映射
+  let confirmMap = {};
+  if (detailData.records) {
+    detailData.records.forEach(r => { confirmMap[r.username] = r.status; });
+  }
+
+  renderBreadcrumb();
+
+  if (!subfolders.length) {
+    content.innerHTML = '<div style="text-align:center;color:var(--gray-400);padding:32px">暂无用户数据</div>';
+    return;
+  }
+
+  // 统计
+  const totalUsers = subfolders.length;
+  const usersWithPhotos = subfolders.filter(sf => (allImages[sf.username] || []).length > 0).length;
+
+  let html = `
+    <div class="detail-summary">
+      <span class="badge badge-pending">${totalUsers} 位成员</span>
+      <span class="badge badge-done">${usersWithPhotos} 人已上传</span>
+    </div>
+    ${getAdminHintHTML()}
+    <div class="folder-grid">
+  `;
+
+  subfolders.forEach(sf => {
+    const photos = allImages[sf.username] || [];
+    const status = confirmMap[sf.username] || 'pending';
+    const hasPhotos = photos.length > 0;
+    let statusLabel, statusClass;
+    if (status === 'completed') {
+      statusLabel = '已确认'; statusClass = 'badge-done';
+    } else if (hasPhotos) {
+      statusLabel = '待确认'; statusClass = 'badge-pending';
+    } else {
+      statusLabel = '未上传'; statusClass = 'badge-my-no';
+    }
+
+    html += `
+      <div class="user-folder-card" onclick="enterUserFolder('${sf.username}', '${sf.display_name || sf.username}')">
+        <div class="user-folder-header">
+          <div class="user-folder-icon">👤</div>
+          <div class="user-folder-info">
+            <div class="user-folder-name">${sf.display_name || sf.username}</div>
+            <div class="user-folder-sub">@${sf.username}</div>
+          </div>
+        </div>
+        <div class="user-folder-badges">
+          <span class="badge ${hasPhotos ? 'badge-done' : 'badge-pending'}">${photos.length} 张</span>
+          <span class="badge ${statusClass}">${statusLabel}</span>
+        </div>
+        ${hasPhotos ? `
+        <div class="user-folder-gallery">
+          ${photos.slice(0, 4).map(img => `<img src="${img.thumb || img.url}" alt="" />`).join('')}
+          ${photos.length > 4 ? `<div style="display:flex;align-items:center;justify-content:center;background:var(--gray-100);border-radius:4px;font-size:11px;color:var(--gray-400)">+${photos.length - 4}</div>` : ''}
+        </div>
+        ` : ''}
+      </div>
+    `;
+  });
+
+  html += '</div>';
+  content.innerHTML = html;
+}
+
+// 进入用户文件夹
+function enterUserFolder(username, displayName) {
+  detailPath.push({ type: 'user', username, name: displayName });
+  renderDetailLevel_UserPhotos(username, displayName);
+}
+
+// 层级2：显示用户在该周的照片
+function renderDetailLevel_UserPhotos(username, displayName) {
+  const content = document.getElementById('detail-content-area');
+  const allImages = detailData.allImages || {};
+  const photos = allImages[username] || [];
+
+  // 确认状态
+  let confirmMap = {};
+  if (detailData.records) {
+    detailData.records.forEach(r => { confirmMap[r.username] = r.status; });
+  }
+  const status = confirmMap[username] || 'pending';
+  let statusLabel, statusClass;
+  if (status === 'completed') {
+    statusLabel = '已确认'; statusClass = 'badge-done';
+  } else if (photos.length > 0) {
+    statusLabel = '待确认'; statusClass = 'badge-pending';
+  } else {
+    statusLabel = '未上传'; statusClass = 'badge-my-no';
+  }
+
+  renderBreadcrumb();
+
+  let html = `
+    <div class="detail-summary">
+      <button class="btn btn-gray btn-xs" onclick="detailGoBack()" style="margin-right:4px">← 返回</button>
+      <span class="badge badge-my-yes">${displayName}</span>
+      <span class="badge ${photos.length > 0 ? 'badge-done' : 'badge-pending'}">${photos.length} 张照片</span>
+      <span class="badge ${statusClass}">${statusLabel}</span>
+    </div>
+  `;
+
+  if (!photos.length) {
+    content.innerHTML = html + `
+      <div style="text-align:center;color:var(--gray-400);padding:32px">
+        <div style="font-size:40px;margin-bottom:8px">📷</div>
+        <div>还没有上传照片</div>
+      </div>
+    `;
+    return;
+  }
+
+  html += `
+    <div class="detail-gallery">
+      ${photos.map(img => `
+        <div class="gallery-item" onclick="previewImg('${img.url}', event)">
+          <img class="gallery-img" src="${img.url}" alt="${img.filename}" loading="lazy" />
+          <div class="gallery-over">
+            <button class="g-btn" onclick="previewImg('${img.url}', event)" title="预览">🔍</button>
+            <button class="g-btn del" onclick="adminDeleteUserImg('${username}','${img.filename}', event)" title="删除">🗑</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+
+  content.innerHTML = html;
+}
+
+async function adminDeleteUserImg(username, filename, e) {
+  e.stopPropagation();
+  if (!confirm(`确认删除 "${username}" 的 "${filename}"？`)) return;
+  try {
+    const r = await fetch(`/api/images/${detailWeekId}/${encodeURIComponent(filename)}?username=${encodeURIComponent(username)}`, { method: 'DELETE' });
+    const d = await r.json();
+    if (d.success) {
+      toast('已删除', 'info');
+      // 重新加载数据并刷新当前视图
+      const weekName = detailPath[0].name;
+      await loadWeekDetailData(detailWeekId, weekName);
+    } else {
+      toast('❌ ' + d.message, 'error');
+    }
+  } catch(e) { toast('❌ 网络错误', 'error'); }
+}
+
+// ============================================================
 // 管理员面板
 // ============================================================
 async function loadAdminPanel() {
   document.getElementById('user-content').style.display = 'none';
   document.getElementById('admin-page').classList.add('show');
+  document.getElementById('admin-week-detail-section').style.display = 'none';
+  // 重置周详情状态
+  detailWeekId = null;
+  detailData = null;
+  detailPath = [];
+  document.getElementById('admin-detail-week-select').value = '';
+  await loadAdminUploadSection();
   loadAdminUsers();
   loadAdminWeeks();
   loadAdminRecords();
+}
+
+// 周详情操作引导提示（显示在周详情区块顶部）
+function getAdminHintHTML() {
+  return `<div style="background:#fef3c7;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:#92400e;line-height:1.6">
+    <div style="font-weight:700;margin-bottom:4px">📖 操作说明</div>
+    <div>① 选择一个周 → ② 点击成员卡片进入文件夹 → ③ 查看/删除照片 → ④ 点击面包屑或「← 返回」回到上级</div>
+  </div>`;
 }
 
 function switchTab(id) {
@@ -1291,7 +1872,7 @@ function formatSize(b) {
 
 function fmtDateShort(d) {
   if (!d) return '';
-  return `${d.slice(5,7)}/${d.slice(8,10)}`;
+  return d.slice(5, 7) + d.slice(8, 10);  // "05" + "18" = "0518"
 }
 
 function fmtDT(iso) {

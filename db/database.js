@@ -233,12 +233,6 @@ const WeekDB = {
       'SELECT * FROM weeks ORDER BY year DESC, week_number DESC'
     ).all();
   },
-  // 获取近 N 周（用于普通用户，-2=上上周, -1=上周, 0=本周）
-  getRecentWeeks(limit = 3) {
-    return getDb().prepare(
-      'SELECT * FROM weeks ORDER BY year DESC, week_number DESC LIMIT ?'
-    ).all(limit);
-  },
   getById(id) {
     return getDb().prepare('SELECT * FROM weeks WHERE id = ?').get(id);
   },
