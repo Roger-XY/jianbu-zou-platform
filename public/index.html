@@ -796,6 +796,13 @@ function showApp(user) {
 
   updateNavRole();
   updateViewMode();
+
+  // 【修复】管理员登录后立即加载 admin panel 数据
+  if (isAdmin) {
+    loadAdminPanel();
+  } else {
+    loadUserPanel();
+  }
 }
 
 function updateNavRole() {

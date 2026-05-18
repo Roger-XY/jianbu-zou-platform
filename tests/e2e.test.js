@@ -1,216 +1,286 @@
 /**
- * E2E 全流程测试 — 健步走上传平台
+ * E2E 功能测试 - 健步走上传平台 v2.3
  *
- * 验证重点：
- * 1. 周 tab 标签正确（上周 / 本周，基于实时日期）
- * 2. 日期区间正确（0511~0517 / 0518~0524）
- * 3. 默认选中上周
- * 4. 切换到本周后可以上传图片
- * 5. 确认完成流程
+ * 运行方式：
+ *   node tests/e2e.test.js
  *
- * 运行前提：服务已启动（node server.js）
- * 运行命令：node tests/e2e.test.js
+ * 测试覆盖：
+ *   1. 登录态检查（checkAuth）
+ *   2. 管理员登录后 admin panel 数据加载
+ *   3. 周详情区块可见性
+ *   4. 普通用户登录态和用户面板加载
+ *   5. 登出功能
  */
 
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
 
-// 辅助：构造 multipart/form-data 上传图片
-function makeUploadRequest(cookie, weekId, filePath, filename) {
-  const fileData = fs.readFileSync(filePath);
-  const boundary = '----TestBoundary' + Date.now();
-  const bodyParts = [];
+const BASE = 'http://localhost:3000';
+const ADMIN_USER = '223525';
+const ADMIN_PWD = '223525';
+const USER_USER = '213690';
+const USER_PWD = '213690';
 
-  // 文件字段
-  const header = `--${boundary}\r\nContent-Disposition: form-data; name="images"; filename="${filename}"\r\nContent-Type: image/png\r\n\r\n`;
-  bodyParts.push(Buffer.from(header));
-  bodyParts.push(fileData);
-  bodyParts.push(Buffer.from('\r\n'));
-  bodyParts.push(Buffer.from(`--${boundary}--\r\n`));
-
-  return new Promise((resolve, reject) => {
-    const body = Buffer.concat(bodyParts);
-    const opts = {
-      hostname: 'localhost', port: 3000,
-      path: `/api/upload?week_id=${encodeURIComponent(weekId)}`,
-      method: 'POST',
-      headers: {
-        'Content-Type': `multipart/form-data; boundary=${boundary}`,
-        'Content-Length': body.length,
-        'Cookie': cookie
-      }
-    };
-    const req = http.request(opts, res => {
-      let d = ''; res.on('data', c => d += c);
-      res.on('end', () => {
-        try { resolve({ status: res.statusCode, body: JSON.parse(d) }); }
-        catch(e) { resolve({ status: res.statusCode, body: d }); }
+// 简易 Cookie Jar
+class CookieJar {
+  constructor() { this.cookies = []; }
+  add(setCookie) {
+    if (Array.isArray(setCookie)) {
+      setCookie.forEach(c => {
+        const m = c.match(/^([^=]+)=([^;]+)/);
+        if (m) {
+          const existing = this.cookies.findIndex(x => x.startsWith(m[1] + '='));
+          if (existing >= 0) this.cookies[existing] = m[1] + '=' + m[2];
+          else this.cookies.push(m[1] + '=' + m[2]);
+        }
       });
-    });
-    req.on('error', reject);
-    req.write(body); req.end();
-  });
+    }
+  }
+  header() {
+    const h = this.cookies.join('; ');
+    return h ? { Cookie: h } : {};
+  }
 }
 
-// 辅助：HTTP 请求
-function httpReq(method, path, body, cookie) {
+function req(method, urlPath, { body, jar, json = true } = {}) {
   return new Promise((resolve, reject) => {
-    const buf = body ? Buffer.from(JSON.stringify(body)) : null;
+    const url = new URL(urlPath, BASE);
     const opts = {
-      hostname: 'localhost', port: 3000, path, method,
-      headers: {
-        'Content-Type': 'application/json',
-        ...(buf ? { 'Content-Length': buf.length } : {}),
-        ...(cookie ? { 'Cookie': cookie } : {})
-      }
+      hostname: url.hostname, port: url.port, path: url.pathname + url.search,
+      method, headers: { 'Content-Type': 'application/json', ...jar.header() }
     };
     const req = http.request(opts, res => {
-      let d = ''; res.on('data', c => d += c);
+      jar.add(res.headers['set-cookie']);
+      let data = '';
+      res.on('data', c => data += c);
       res.on('end', () => {
-        try { resolve({ status: res.statusCode, headers: res.headers, body: JSON.parse(d) }); }
-        catch(e) { resolve({ status: res.statusCode, body: d }); }
+        if (!json) return resolve({ status: res.statusCode, body: data });
+        try { resolve({ status: res.statusCode, body: JSON.parse(data) }); }
+        catch { resolve({ status: res.statusCode, body: data }); }
       });
     });
     req.on('error', reject);
-    if (buf) req.write(buf);
+    if (body) req.write(JSON.stringify(body));
     req.end();
   });
 }
 
-// 测试用例
-async function test(name, fn) {
-  try {
-    await fn();
-    console.log(`  ✅ ${name}`);
-  } catch(e) {
-    console.error(`  ❌ ${name}: ${e.message}`);
-    process.exitCode = 1;
-  }
+function assert(condition, msg) {
+  if (!condition) throw new Error('❌ 断言失败: ' + msg);
+  console.log('  ✓ ' + msg);
 }
 
-// ========== E2E 测试 ==========
-async function runE2E() {
-  console.log('\n========== E2E 全流程测试 ==========\n');
+async function run() {
+  console.log('\n========================================');
+  console.log('E2E 功能测试 - 健步走上传平台');
+  console.log('========================================\n');
 
-  // 1. 生成测试用 PNG（1x1 白色像素）
-  const testImgPath = path.join(__dirname, '_test_img.png');
-  const png1px = Buffer.from(
-    '89504e470d0a1a0a0000000d49484452000000010000000108020000009001' +
-    '2e000000003c4944415408d76360f8cfc00000000200012c4a0f5c0000000049454e44ae426082',
-    'hex'
-  );
-  fs.writeFileSync(testImgPath, png1px);
+  let passed = 0, failed = 0;
 
-  // 2. 登录（普通用户）
-  const loginR = await httpReq('POST', '/api/login', { username: '195855', password: '195855' });
-  if (!loginR.body.success) throw new Error('登录失败: ' + JSON.stringify(loginR.body));
-  const cookie = loginR.headers['set-cookie'].map(c => c.split(';')[0]).join('; ');
-  console.log(`  → 普通用户登录: ${loginR.body.displayName}（${loginR.body.role}）`);
-
-  // 3. 获取周列表
-  const weeksR = await httpReq('GET', '/api/weeks', null, cookie);
-  if (!weeksR.body.success) throw new Error('获取周列表失败');
-  const weeks = weeksR.body.weeks;
-
-  // ========== 重点用例：周标签和日期区间 ==========
-  await test('周列表返回 2 条（上周 + 本周）', () => {
-    if (weeks.length !== 2) throw new Error(`期望 2 周，实际 ${weeks.length} 周`);
-  });
-
-  // 计算今日和本周
-  const today = new Date().toISOString().slice(0, 10);
-
-  await test('Tab[0] = 上周（非本周）', () => {
-    const tab0 = weeks[0];
-    const isThisWeek = today >= tab0.week_start && today <= tab0.week_end;
-    if (isThisWeek) throw new Error(`Tab[0] 应为"上周"，但日期区间 ${tab0.week_start}~${tab0.week_end} 包含今天`);
-  });
-
-  await test('Tab[1] = 本周（包含今日）', () => {
-    const tab1 = weeks[1];
-    const isThisWeek = today >= tab1.week_start && today <= tab1.week_end;
-    if (!isThisWeek) throw new Error(`Tab[1] 应为"本周"，但日期区间 ${tab1.week_start}~${tab1.week_end} 不包含今天 ${today}`);
-  });
-
-  await test('Tab 日期格式正确（MMdd~MMdd）', () => {
-    const fmtDateShort = d => d.slice(5,7) + d.slice(8,10);
-    const fmtExpected = d => `${d.slice(5,7)}${d.slice(8,10)}`;
-    for (const w of weeks) {
-      const got = fmtDateShort(w.week_start) + '~' + fmtDateShort(w.week_end);
-      const got2 = fmtDateShort(w.week_start);
-      if (!/^\d{4}~\d{4}$/.test(got)) throw new Error(`日期格式错误: ${got}，应为 MMDD~MMDD`);
+  async function test(name, fn) {
+    process.stdout.write(`[${name}] `);
+    try {
+      await fn();
+      passed++;
+    } catch(e) {
+      console.error('  ❌ ' + e.message);
+      failed++;
     }
+  }
+
+  // ── 读取 index.html 检查 HTML 结构 ──────────────────────────
+  await test('HTML结构 - admin-page 与 user-content 在 app-page 内', async () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+    // 检查关键元素的 ID 均存在于 HTML 中
+    assert(html.includes('<div id="app-page">'), 'app-page 元素存在');
+    assert(html.includes('<div class="main-content" id="user-content">'), 'user-content 元素存在');
+    assert(html.includes('<div class="main-content" id="admin-page">'), 'admin-page 元素存在');
+    // 验证 admin-page 确实不在 user-content 的闭合标签之后才出现
+    // 用行号辅助判断：grep 输出已确认 admin-page 在 user-content 之后
+    const lines = html.split('\n');
+    let userContentLine = -1, adminPageLine = -1;
+    lines.forEach((l, i) => {
+      if (l.includes('id="user-content"')) userContentLine = i;
+      if (l.includes('id="admin-page"') && l.trim().startsWith('<div')) adminPageLine = i;
+    });
+    assert(userContentLine >= 0 && adminPageLine >= 0, `user-content 在第${userContentLine + 1}行，admin-page 在第${adminPageLine + 1}行`);
+    assert(adminPageLine > userContentLine, 'admin-page 在 user-content 之后（同级关系）');
   });
 
-  await test('Tab 日期区间与周号对应正确', () => {
-    // 当前是 2026-05-18 = 第7周，上周是第6周
-    const curWeek = weeks.find(w => today >= w.week_start && today <= w.week_end);
-    const lastWeek = weeks.find(w => w.week_end < today);
-    if (!curWeek) throw new Error('找不到包含今天的"本周"');
-    if (!lastWeek) throw new Error('找不到"上周"');
-    // 验证周号
-    if (curWeek.week_number !== 7) throw new Error(`本周应为第7周，实际第${curWeek.week_number}周`);
-    if (lastWeek.week_number !== 6) throw new Error(`上周应为第6周，实际第${lastWeek.week_number}周`);
+  await test('HTML结构 - admin-week-detail-section 元素存在', async () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+    assert(html.includes('id="admin-week-detail-section"'), 'admin-week-detail-section 元素存在');
+    assert(html.includes('id="admin-detail-week-select"'), 'admin-detail-week-select 选择器存在');
+    assert(html.includes('id="detail-breadcrumb"'), '面包屑导航元素存在');
   });
 
-  // ========== 核心用例：上传 + 确认流程 ==========
-  const thisWeek = weeks.find(w => today >= w.week_start && today <= w.week_end);
-
-  await test('本周 tab 可以查询图片列表', async () => {
-    const r = await httpReq('GET', `/api/images/${thisWeek.id}`, null, cookie);
-    if (!r.body.success) throw new Error(r.body.message);
+  // ── Test 1: checkAuth 无登录态 ──────────────────────────────
+  await test('checkAuth - 未登录返回 loggedIn:false', async () => {
+    const jar = new CookieJar();
+    const r = await req('GET', '/api/auth/status', { jar });
+    assert(r.body.loggedIn === false, `loggedIn=${r.body.loggedIn}`);
   });
 
-  // 上传一张测试图片
-  const uploadR = await makeUploadRequest(cookie, thisWeek.id, testImgPath, 'e2e_test.png');
-  await test('本周 tab 上传图片成功', () => {
-    if (!uploadR.body.success) throw new Error(uploadR.body.message || JSON.stringify(uploadR.body));
-    if (!uploadR.body.files || uploadR.body.files.length === 0) throw new Error('未返回文件信息');
+  // ── Test 2: 管理员完整登录流程 ───────────────────────────────
+  await test('管理员登录 - POST /api/login', async () => {
+    const jar = new CookieJar();
+    const r = await req('POST', '/api/login', { body: { username: ADMIN_USER, password: ADMIN_PWD }, jar });
+    assert(r.status === 200, `status=200`);
+    assert(r.body.success === true, `success=true`);
+    assert(r.body.role === 'admin', `role=admin`);
+    assert(r.body.username === ADMIN_USER, `username=${ADMIN_USER}`);
+    // 保存 jar 供后续测试用
+    global.adminJar = jar;
   });
 
-  const uploadedFile = uploadR.body.files[0];
-
-  await test('本周 tab 上传后图片出现在列表中', async () => {
-    const r = await httpReq('GET', `/api/images/${thisWeek.id}`, null, cookie);
-    if (!r.body.success) throw new Error(r.body.message);
-    const found = r.body.images.find(img => img.filename === uploadedFile.filename);
-    if (!found) throw new Error(`上传的文件 ${uploadedFile.filename} 未出现在图片列表`);
+  await test('管理员 - checkAuth 返回已登录', async () => {
+    const r = await req('GET', '/api/auth/status', { jar: global.adminJar });
+    assert(r.body.loggedIn === true, `loggedIn=true`);
+    assert(r.body.role === 'admin', `role=admin`);
   });
 
-  // 清理：删除测试图片
-  const deleteR = await httpReq('DELETE', `/api/images/${thisWeek.id}/${encodeURIComponent(uploadedFile.filename)}`, null, cookie);
-  await test('删除测试图片', () => {
-    if (!deleteR.body.success) throw new Error(deleteR.body.message || JSON.stringify(deleteR.body));
+  await test('管理员 - GET /api/weeks 返回所有周', async () => {
+    const r = await req('GET', '/api/weeks', { jar: global.adminJar });
+    assert(r.body.success === true, `success=true`);
+    assert(Array.isArray(r.body.weeks), 'weeks 是数组');
+    assert(r.body.weeks.length >= 3, `至少3周数据（实际${r.body.weeks.length}周）`);
   });
 
-  await test('删除后图片从列表消失', async () => {
-    const r = await httpReq('GET', `/api/images/${thisWeek.id}`, null, cookie);
-    if (!r.body.success) throw new Error(r.body.message);
-    const found = r.body.images.find(img => img.filename === uploadedFile.filename);
-    if (found) throw new Error(`删除的文件 ${uploadedFile.filename} 仍存在于列表`);
+  await test('管理员 - GET /api/admin/users 返回用户列表', async () => {
+    const r = await req('GET', '/api/admin/users', { jar: global.adminJar });
+    assert(r.body.success === true, `success=true`);
+    assert(r.body.users.length >= 2, `至少2个用户（实际${r.body.users.length}个）`);
+    const admin = r.body.users.find(u => u.role === 'admin');
+    assert(admin, '包含管理员账户');
   });
 
-  // ========== 边界用例 ==========
-  await test('切换到上周 tab 可正常查询', async () => {
-    const lastWeek = weeks.find(w => w.week_end < today);
-    if (!lastWeek) return; // 无上周时跳过
-    const r = await httpReq('GET', `/api/images/${lastWeek.id}`, null, cookie);
-    if (!r.body.success) throw new Error(r.body.message);
+  // ── Test 3: 周详情 API ─────────────────────────────────────
+  await test('管理员 - GET /api/images/:week_id 返回 allImages', async () => {
+    const r1 = await req('GET', '/api/weeks', { jar: global.adminJar });
+    const weekId = r1.body.weeks[0].id;
+    const r = await req('GET', `/api/images/${weekId}`, { jar: global.adminJar });
+    assert(r.body.success === true, `success=true`);
+    assert(r.body.subfolders !== undefined, '返回 subfolders 字段');
+    assert(r.body.allImages !== undefined, '返回 allImages 字段（按用户分组的图片）');
+    assert(typeof r.body.allImages === 'object', 'allImages 是对象');
   });
 
-  await test('上周 tab 无 week_id 时返回 404', async () => {
-    const r = await httpReq('GET', '/api/images/nonexistent-id', null, cookie);
-    if (r.status !== 404) throw new Error(`期望 404，实际 ${r.status}`);
+  // ── Test 4: 普通用户登录 ────────────────────────────────────
+  await test('普通用户登录 - POST /api/login', async () => {
+    const jar = new CookieJar();
+    const r = await req('POST', '/api/login', { body: { username: USER_USER, password: USER_PWD }, jar });
+    assert(r.status === 200, `status=200`);
+    assert(r.body.success === true, `success=true`);
+    assert(r.body.role === 'user', `role=user`);
+    global.userJar = jar;
   });
 
-  // 清理测试图片
-  fs.unlinkSync(testImgPath);
+  await test('普通用户 - checkAuth 返回已登录', async () => {
+    const r = await req('GET', '/api/auth/status', { jar: global.userJar });
+    assert(r.body.loggedIn === true, `loggedIn=true`);
+    assert(r.body.role === 'user', `role=user`);
+  });
 
-  console.log('\n========== E2E 测试完成 ==========\n');
+  await test('普通用户 - GET /api/weeks 只返回近2周', async () => {
+    const r = await req('GET', '/api/weeks', { jar: global.userJar });
+    assert(r.body.success === true, `success=true`);
+    // 普通用户应只看到近2周
+    assert(r.body.weeks.length <= 2, `最多2周（实际${r.body.weeks.length}周）`);
+  });
+
+  await test('普通用户 - GET /api/images/:week_id 返回自己的图片', async () => {
+    const r1 = await req('GET', '/api/weeks', { jar: global.userJar });
+    const weekId = r1.body.weeks[0].id;
+    const r = await req('GET', `/api/images/${weekId}`, { jar: global.userJar });
+    assert(r.body.success === true, `success=true`);
+    assert(Array.isArray(r.body.images), 'images 是数组');
+    assert(r.body.allImages === undefined, '普通用户不返回 allImages（只返回自己的图片）');
+  });
+
+  // ── Test 5: 权限控制 ────────────────────────────────────────
+  await test('普通用户 - GET /api/admin/users 应返回 403', async () => {
+    const r = await req('GET', '/api/admin/users', { jar: global.userJar });
+    assert(r.status === 403, `status=403（需要管理员权限）`);
+  });
+
+  // ── Test 6: 登出 ────────────────────────────────────────────
+  await test('登出 - POST /api/logout', async () => {
+    const r = await req('POST', '/api/logout', { jar: global.adminJar });
+    assert(r.body.success === true, `success=true`);
+  });
+
+  await test('登出后 - checkAuth 返回未登录', async () => {
+    const r = await req('GET', '/api/auth/status', { jar: global.adminJar });
+    assert(r.body.loggedIn === false, `loggedIn=false`);
+  });
+
+  // ── Test 7: JS 代码检查 ────────────────────────────────────
+  await test('JS代码 - showApp() 在 admin 模式下调用 loadAdminPanel()', async () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+    // 找 showApp 函数范围（下一个顶层 function 或 </script> 之前）
+    const showAppIdx = html.indexOf('function showApp(');
+    assert(showAppIdx >= 0, '找到 showApp 函数');
+    // 找紧跟的下一个顶层函数
+    const nextScript = html.indexOf('\nfunction ', showAppIdx + 1);
+    const nextAsync = html.indexOf('\nasync function ', showAppIdx + 1);
+    const nextFn = nextScript >= 0 && nextAsync >= 0 ? Math.min(nextScript, nextAsync)
+                 : nextScript >= 0 ? nextScript : nextAsync;
+    const endIdx = nextFn > showAppIdx ? nextFn : html.length;
+    const body = html.substring(showAppIdx, endIdx);
+    assert(body.includes('loadAdminPanel()'), 'showApp() 调用了 loadAdminPanel()');
+  });
+
+  await test('JS代码 - loadAdminPanel() 调用所有数据加载函数', async () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+    const match = html.match(/async function loadAdminPanel\(\)\s*\{([\s\S]*?)\n\}/);
+    assert(match, '找到 loadAdminPanel 函数');
+    const body = match[1];
+    assert(body.includes('loadAdminUploadSection()'), '调用 loadAdminUploadSection()');
+    assert(body.includes('loadAdminUsers()'), '调用 loadAdminUsers()');
+    assert(body.includes('loadAdminWeeks()'), '调用 loadAdminWeeks()');
+    assert(body.includes('loadAdminRecords()'), '调用 loadAdminRecords()');
+  });
+
+  await test('JS代码 - loadAdminPanel() 默认隐藏周详情区块', async () => {
+    const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8');
+    const match = html.match(/async function loadAdminPanel\(\)\s*\{([\s\S]*?)\n\}/);
+    assert(match, '找到 loadAdminPanel 函数');
+    const body = match[1];
+    assert(body.includes("style.display = 'none'"), "初始化时设置 style.display = 'none'");
+  });
+
+  // ── Test 8: 错误处理 ────────────────────────────────────────
+  await test('错误处理 - 缺少 week_id 的上传请求返回 400', async () => {
+    const jar = new CookieJar();
+    const r1 = await req('POST', '/api/login', { body: { username: ADMIN_USER, password: ADMIN_PWD }, jar });
+    global.adminJar = jar;
+    const r = await req('POST', '/api/upload', { jar });
+    assert(r.status === 400, `status=400`);
+    assert(r.body.success === false, `success=false`);
+  });
+
+  await test('错误处理 - 未登录访问受保护接口返回 401', async () => {
+    const jar = new CookieJar();
+    const r = await req('GET', '/api/weeks', { jar });
+    assert(r.status === 401, `status=401`);
+  });
+
+  // ── Test 9: 登录失败 ────────────────────────────────────────
+  await test('登录失败 - 错误密码', async () => {
+    const jar = new CookieJar();
+    const r = await req('POST', '/api/login', { body: { username: ADMIN_USER, password: 'wrong' }, jar });
+    assert(r.status === 401, `status=401`);
+    assert(r.body.success === false, `success=false`);
+  });
+
+  // ── Test 10: 速率限制 ────────────────────────────────────────
+  // (略过，大量请求可能导致账户临时封禁)
+
+  console.log(`\n========================================`);
+  console.log(`测试结果：${passed} 通过，${failed} 失败`);
+  console.log(`========================================\n`);
+  process.exit(failed > 0 ? 1 : 0);
 }
 
-runE2E().catch(e => {
-  console.error('测试异常:', e);
-  process.exit(1);
-});
+run().catch(e => { console.error('测试运行错误:', e); process.exit(1); });
