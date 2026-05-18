@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>健步走上传平台</title>
+  <style>
+    /* ========== 变量 ========== */
+    :root {
+      --primary: #6366f1; --primary-light: #818cf8; --primary-dark: #4f46e5;
+      --primary-bg: #eef2ff;
+      --success: #10b981; --success-light: #d1fae5;
+      --warning: #f59e0b; --warning-light: #fef3c7;
+      --error: #ef4444; --error-light: #fee2e2;
+      --gray-50: #f8fafc; --gray-100: #f1f5f9; --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1; --gray-400: #94a3b8; --gray-500: #64748b;
+      --gray-600: #475569; --gray-700: #334155; --gray-800: #1e293b; --gray-900: #0f172a;
+      --radius-sm: 8px; --radius: 12px; --radius-lg: 16px; --radius-xl: 20px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08); --shadow-lg: 0 8px 24px rgba(0,0,0,0.12);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+      --header-height: 56px; --tab-height: 64px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+      background: var(--gray-50); color: var(--gray-800);
+      min-height: 100vh; min-height: 100dvh;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* ========== 顶部导航栏 ========== */
+    .top-bar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: var(--header-height);
+      background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(226,232,240,0.8);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px;
+    }
+    .top-bar-logo {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 16px; font-weight: 700; color: var(--gray-900);
+    }
+    .top-bar-logo-icon {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 14px;
+    }
+    .top-bar-right { display: flex; align-items: center; gap: 8px; }
+    .role-chip {
+      font-size: 11px; padding: 2px 8px; border-radius: 20px; font-weight: 600;
+    }
+    .role-admin { background: var(--warning-light); color: #92400e; }
+    .role-user { background: #dbeafe; color: #1e40af; }
+    .btn-ghost {
+      background: none; border: none; color: var(--gray-500);
+      font-size: 13px; cursor: pointer; padding: 6px 10px;
+      border-radius: 8px; transition: all 0.15s;
+    }
+    .btn-ghost:active { background: var(--gray-100); }
+
+    /* ========== 底部周切换标签栏（移动端核心） ========== */
+    .week-tabs {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(255,255,255,0.97); backdrop-filter: blur(12px);
+      border-top: 1px solid var(--gray-200);
+      padding-bottom: var(--safe-bottom);
+      display: flex;
+    }
+    .week-tab {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      padding: 8px 4px 10px; cursor: pointer; border: none; background: none;
+      color: var(--gray-400); transition: all 0.15s; position: relative;
+      min-height: var(--tab-height);
+    }
+    .week-tab:active { background: var(--gray-50); }
+    .week-tab.active { color: var(--primary); }
+    .week-tab.active::before {
+      content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      width: 32px; height: 3px; background: var(--primary);
+      border-radius: 0 0 3px 3px;
+    }
+    .week-tab-icon { font-size: 20px; line-height: 1; margin-bottom: 3px; }
+    .week-tab-label { font-size: 11px; font-weight: 600; line-height: 1.2; text-align: center; }
+    .week-tab-sub { font-size: 10px; opacity: 0.7; }
+    .week-tab-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--success); position: absolute; top: 8px; right: calc(50% - 14px);
+    }
+    .week-tab-pending { background: var(--warning); }
+
+    /* ========== 主内容区 ========== */
+    .main-content {
+      padding: calc(var(--header-height) + 12px) 16px
+                calc(var(--tab-height) + var(--safe-bottom) + 16px);
+      max-width: 640px; margin: 0 auto;
+    }
+
+    /* ========== 登录页 ========== */
+    #login-page { padding-top: 48px; }
+    .login-title {
+      font-size: 28px; font-weight: 800; color: var(--gray-900);
+      margin-bottom: 6px;
+    }
+    .login-sub { font-size: 14px; color: var(--gray-500); margin-bottom: 28px; }
+    .card {
+      background: white; border-radius: var(--radius-lg);
+      box-shadow: var(--shadow); border: 1px solid rgba(226,232,240,0.6);
+      overflow: hidden; margin-bottom: 16px;
+    }
+    .card-body { padding: 20px; }
+
+    /* ========== 表单 ========== */
+    .form-group { margin-bottom: 14px; }
+    .form-label {
+      display: block; font-size: 13px; font-weight: 600;
+      color: var(--gray-700); margin-bottom: 6px;
+    }
+    .form-control {
+      width: 100%; padding: 12px 14px; border: 1.5px solid var(--gray-200);
+      border-radius: var(--radius); font-size: 15px; color: var(--gray-800);
+      background: var(--gray-50); transition: border-color 0.15s;
+      outline: none; -webkit-appearance: none;
+    }
+    .form-control:focus {
+      border-color: var(--primary); background: white;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+    }
+    .input-wrap { position: relative; }
+    .input-icon {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--gray-400); font-size: 15px; pointer-events: none;
+    }
+    .input-wrap .form-control { padding-left: 40px; }
+    .toggle-pwd {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; color: var(--gray-400);
+      cursor: pointer; font-size: 16px; padding: 4px;
+    }
+    #login-btn {
+      width: 100%; padding: 14px; border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white; border: none; font-size: 16px; font-weight: 700;
+      cursor: pointer; transition: all 0.15s; margin-top: 4px;
+    }
+    #login-btn:active { transform: scale(0.98); }
+    #login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    /* ========== 账号表格 ========== */
+    .acct-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+    }
+    .acct-item {
+      background: var(--gray-50); border-radius: var(--radius);
+      padding: 10px 12px; border: 1px solid var(--gray-200);
+    }
+    .acct-name { font-size: 13px; font-weight: 600; color: var(--gray-800); }
+    .acct-pwd { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+    .acct-chip {
+      display: inline-block; font-size: 10px; padding: 1px 6px;
+      border-radius: 10px; font-weight: 600; margin-top: 4px;
+    }
+
+    /* ========== Alert ========== */
+    .alert {
+      padding: 10px 14px; border-radius: var(--radius); font-size: 13px;
+      display: flex; align-items: center; gap: 8px; margin-bottom: 12px;
+    }
+    .alert-error { background: var(--error-light); color: #991b1b; border: 1px solid #fecaca; }
+    .alert-info { background: var(--primary-bg); color: var(--primary-dark); border: 1px solid rgba(99,102,241,0.2); }
+    .hidden { display: none !important; }
+
+    /* ========== 应用主界面 ========== */
+    #app-page { display: none; }
+    #app-page.show { display: block; }
+
+    /* ========== 周信息头部 ========== */
+    .week-header {
+      background: white; border-radius: var(--radius-lg);
+      box-shadow: var(--shadow); border: 1px solid rgba(226,232,240,0.6);
+      padding: 16px; margin-bottom: 14px;
+    }
+    .week-header-title {
+      font-size: 18px; font-weight: 800; color: var(--gray-900); line-height: 1.3;
+    }
+    .week-header-range { font-size: 13px; color: var(--gray-500); margin-top: 4px; }
+    .week-header-badges { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 600;
+    }
+    .badge-done { background: var(--success-light); color: #065f46; }
+    .badge-pending { background: var(--warning-light); color: #92400e; }
+    .badge-my-yes { background: var(--primary-bg); color: var(--primary-dark); }
+    .badge-my-no { background: var(--gray-100); color: var(--gray-500); }
+
+    /* ========== 上传区 ========== */
+    .upload-zone {
+      border: 2px dashed var(--gray-200); border-radius: var(--radius-lg);
+      padding: 32px 16px; text-align: center; cursor: pointer;
+      background: var(--gray-50); transition: all 0.15s;
+      margin-bottom: 14px;
+    }
+    .upload-zone:active { border-color: var(--primary); background: var(--primary-bg); }
+    .upload-zone.done-zone {
+      border-color: var(--success); background: #f0fdf4;
+    }
+    .upload-zone.disabled-zone {
+      border-color: var(--gray-300); background: var(--gray-100); cursor: not-allowed;
+      opacity: 0.7;
+    }
+    .upload-icon { font-size: 40px; margin-bottom: 8px; }
+    .upload-title { font-size: 15px; font-weight: 600; color: var(--gray-700); }
+    .upload-hint { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+    #file-input { display: none; }
+
+    /* ========== 上传队列 ========== */
+    .queue { margin-bottom: 14px; }
+    .queue-item {
+      display: flex; align-items: center; gap: 10px;
+      background: white; border-radius: var(--radius);
+      padding: 10px 12px; margin-bottom: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .queue-thumb {
+      width: 44px; height: 44px; border-radius: 8px; object-fit: cover;
+      background: var(--gray-100); flex-shrink: 0;
+    }
+    .queue-info { flex: 1; min-width: 0; }
+    .queue-name {
+      font-size: 13px; font-weight: 600; color: var(--gray-700);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .queue-size { font-size: 11px; color: var(--gray-400); }
+    .queue-del {
+      width: 32px; height: 32px; border-radius: 8px; background: var(--gray-100);
+      border: none; color: var(--gray-400); cursor: pointer; font-size: 14px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all 0.15s;
+    }
+    .queue-del:active { background: var(--error-light); color: var(--error); }
+    .queue-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 12px 16px; border-radius: var(--radius); font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.15s; border: none; flex: 1;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+    }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-gray { background: var(--gray-100); color: var(--gray-600); }
+    .btn-warning { background: var(--warning); color: white; }
+    .spinner {
+      width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white; border-radius: 50%;
+      animation: spin 0.7s linear infinite; display: inline-block;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-bar {
+      height: 3px; background: var(--gray-100); border-radius: 2px;
+      margin-top: 8px; overflow: hidden; display: none;
+    }
+    .progress-fill {
+      height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      border-radius: 2px; transition: width 0.3s; width: 0%;
+    }
+
+    /* ========== 画廊 ========== */
+    .gallery-section { margin-bottom: 14px; }
+    .gallery-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .gallery-title { font-size: 14px; font-weight: 700; color: var(--gray-700); }
+    .gallery-count { font-size: 12px; color: var(--gray-500); }
+    .gallery {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+    }
+    .gallery-item {
+      border-radius: var(--radius); overflow: hidden; aspect-ratio: 1;
+      background: var(--gray-100); position: relative; cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    }
+    .gallery-item:active { transform: scale(0.97); }
+    .gallery-img { width: 100%; height: 100%; object-fit: cover; }
+    .gallery-over {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.45);
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      opacity: 0; transition: opacity 0.15s;
+    }
+    .gallery-item:active .gallery-over { opacity: 1; }
+    .g-btn {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
+      color: white; font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .g-btn:active { background: rgba(255,255,255,0.3); }
+    .g-btn.del:active { background: rgba(239,68,68,0.7); }
+    .gallery-empty {
+      grid-column: 1/-1; text-align: center; padding: 32px 16px;
+      color: var(--gray-400); background: white; border-radius: var(--radius-lg);
+      border: 1px dashed var(--gray-200);
+    }
+    .gallery-empty-icon { font-size: 32px; margin-bottom: 8px; }
+    .gallery-empty-text { font-size: 13px; }
+
+    /* ========== 确认完成面板 ========== */
+    .confirm-panel {
+      border: 2px solid var(--warning); border-radius: var(--radius-lg);
+      background: var(--warning-light); padding: 14px; margin-bottom: 14px;
+    }
+    .confirm-panel.all-done {
+      border-color: var(--success); background: var(--success-light);
+    }
+    .confirm-panel-title {
+      font-size: 14px; font-weight: 700;
+      color: var(--gray-800); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;
+    }
+    .confirm-panel-desc { font-size: 12px; color: var(--gray-600); }
+    .confirm-panel .btn { margin-top: 10px; }
+
+    /* ========== Toast ========== */
+    #toast {
+      position: fixed; bottom: calc(var(--tab-height) + var(--safe-bottom) + 12px);
+      left: 50%; transform: translateX(-50%); z-index: 200;
+      display: flex; flex-direction: column; gap: 6px; pointer-events: none;
+      align-items: center; width: 100%; padding: 0 16px;
+    }
+    .toast {
+      padding: 10px 16px; border-radius: 20px; font-size: 13px; font-weight: 500;
+      box-shadow: var(--shadow-lg); max-width: 360px; width: 100%;
+      text-align: center; animation: toastIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .toast-success { background: #065f46; color: white; }
+    .toast-error { background: #991b1b; color: white; }
+    .toast-info { background: var(--primary-dark); color: white; }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ========== Modal ========== */
+    .modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75);
+      z-index: 300; display: flex; align-items: center; justify-content: center;
+      padding: 16px; cursor: pointer;
+    }
+    .modal.hide { display: none; }
+    .modal-img {
+      max-width: 95vw; max-height: 90vh; border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg); cursor: default; object-fit: contain;
+    }
+    .modal-close {
+      position: fixed; top: 12px; right: 12px;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2);
+      color: white; font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ========== 添加用户弹窗 ========== */
+    .modal-form {
+      background: white; border-radius: var(--radius-xl); padding: 24px;
+      width: 100%; max-width: 380px; cursor: default; max-height: 90vh; overflow-y: auto;
+    }
+    .modal-form-title { font-size: 18px; font-weight: 800; margin-bottom: 16px; }
+    .modal-form-actions { display: flex; gap: 8px; margin-top: 16px; }
+
+    /* ========== 管理员面板 ========== */
+    #admin-page { display: none; }
+    #admin-page.show { display: block; }
+
+    .admin-tabs {
+      display: flex; gap: 4px; margin-bottom: 16px;
+      background: white; border-radius: var(--radius-lg);
+      padding: 4px; box-shadow: var(--shadow); border: 1px solid rgba(226,232,240,0.6);
+    }
+    .tab-btn {
+      flex: 1; padding: 10px 8px; font-size: 13px; font-weight: 600;
+      color: var(--gray-500); background: none; border: none;
+      cursor: pointer; border-radius: var(--radius); transition: all 0.15s;
+    }
+    .tab-btn.active { background: var(--primary); color: white; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .admin-card {
+      background: white; border-radius: var(--radius-lg);
+      box-shadow: var(--shadow); border: 1px solid rgba(226,232,240,0.6);
+      overflow: hidden; margin-bottom: 14px;
+    }
+    .admin-card-head {
+      padding: 14px 16px; display: flex; align-items: center; gap: 10px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .admin-card-icon {
+      width: 32px; height: 32px; border-radius: 8px; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .admin-card-title { font-size: 14px; font-weight: 700; color: var(--gray-800); }
+    .admin-card-body { padding: 12px 16px; }
+
+    .admin-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 0; border-bottom: 1px solid var(--gray-100);
+    }
+    .admin-row:last-child { border-bottom: none; }
+    .admin-row-info { flex: 1; }
+    .admin-row-name { font-size: 14px; font-weight: 600; color: var(--gray-800); }
+    .admin-row-sub { font-size: 12px; color: var(--gray-500); }
+    .admin-row-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+    .btn-xs {
+      padding: 5px 10px; font-size: 12px; border-radius: 6px;
+      border: none; cursor: pointer; font-weight: 600;
+    }
+    .btn-xs-danger { background: var(--error-light); color: #991b1b; }
+    .btn-xs-success { background: var(--success-light); color: #065f46; }
+
+    /* ========== 桌面端（min-width: 640px） ========== */
+    @media (min-width: 640px) {
+      .main-content { padding: calc(var(--header-height) + 20px) 20px calc(var(--tab-height) + 20px); }
+      .week-tabs { max-width: 640px; left: 50%; transform: translateX(-50%); }
+      .top-bar { max-width: 640px; left: 50%; transform: translateX(-50%); }
+      .top-bar, .week-tabs { right: auto; }
+      .gallery { grid-template-columns: repeat(4, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ========== 顶部导航栏 ========== -->
+<nav class="top-bar" id="top-bar">
+  <div class="top-bar-logo">
+    <div class="top-bar-logo-icon">🖼</div>
+    <span>健步走上传</span>
+  </div>
+  <div class="top-bar-right" id="nav-right" style="display:none">
+    <span class="role-chip" id="nav-role"></span>
+    <button class="btn-ghost" onclick="logout()">退出</button>
+  </div>
+</nav>
+
+<!-- ========== 主内容 ========== -->
+<main>
+
+  <!-- ========== 登录页 ========== -->
+  <div class="main-content" id="login-page">
+    <div class="login-title">健步走上传平台</div>
+    <div class="login-sub">登录后选择周文件夹上传照片</div>
+
+    <div class="alert alert-error hidden" id="login-alert"></div>
+
+    <div class="card">
+      <div class="card-body">
+        <form id="login-form" onsubmit="handleLogin(event)" novalidate>
+          <div class="form-group">
+            <label class="form-label">账号</label>
+            <div class="input-wrap">
+              <span class="input-icon">👤</span>
+              <input type="text" id="f-user" class="form-control" placeholder="请输入账号" autocomplete="username" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">密码</label>
+            <div class="input-wrap">
+              <span class="input-icon">🔑</span>
+              <input type="password" id="f-pwd" class="form-control" placeholder="请输入密码" autocomplete="current-password" required />
+              <button type="button" class="toggle-pwd" onclick="togglePwd()">👁</button>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary" id="login-btn" style="width:100%;padding:14px;font-size:16px">
+            登录
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div style="font-size:13px;font-weight:700;color:var(--gray-700);margin-bottom:10px">登录说明</div>
+        <div style="font-size:13px;color:var(--gray-600);line-height:1.6">
+          请使用分配的账号密码登录。如有疑问请联系管理员。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 用户上传界面 ========== -->
+  <div id="app-page">
+    <div class="main-content" id="user-content">
+      <!-- 周信息头部 -->
+      <div class="week-header" id="week-header">
+        <div class="week-header-title" id="wh-title">加载中...</div>
+        <div class="week-header-range" id="wh-range"></div>
+        <div class="week-header-badges" id="wh-badges"></div>
+      </div>
+
+      <!-- 上传区 -->
+      <div id="upload-zone-wrap">
+        <div class="upload-zone" id="upload-zone"
+          onclick="document.getElementById('file-input').click()"
+          ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)">
+          <div class="upload-icon" id="uz-icon">🖼️</div>
+          <div class="upload-title" id="uz-title">点击选择图片</div>
+          <div class="upload-hint" id="uz-hint">支持 JPG、PNG、GIF、WebP，单文件最大 20MB，最多 20 张</div>
+          <input type="file" id="file-input" accept="image/*" multiple onchange="handleFileSelect(event)" />
+        </div>
+      </div>
+
+      <!-- 上传队列 -->
+      <div class="queue hidden" id="upload-queue-wrap">
+        <div id="queue-list"></div>
+        <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="queue-actions">
+          <button class="btn btn-primary" onclick="startUpload()" id="do-upload-btn">
+            <span id="upload-btn-text">上传</span>
+          </button>
+          <button class="btn btn-gray" onclick="clearQueue()">清空</button>
+        </div>
+      </div>
+
+      <!-- 画廊 -->
+      <div class="gallery-section" id="gallery-section">
+        <div class="gallery-header">
+          <span class="gallery-title">我的照片</span>
+          <span class="gallery-count" id="gallery-count"></span>
+        </div>
+        <div class="gallery" id="my-gallery">
+          <div class="gallery-empty">
+            <div class="gallery-empty-icon">📷</div>
+            <div class="gallery-empty-text">还没有上传照片</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 确认完成 -->
+      <div id="confirm-section"></div>
+    </div>
+
+    <!-- ========== 管理员面板 ========== -->
+    <div class="main-content" id="admin-page">
+
+      <div class="admin-tabs">
+        <button class="tab-btn active" id="tab-btn-users" onclick="switchTab('tab-users')">👥 用户</button>
+        <button class="tab-btn" id="tab-btn-weeks" onclick="switchTab('tab-weeks')">📁 周</button>
+        <button class="tab-btn" id="tab-btn-log" onclick="switchTab('tab-log')">📊 记录</button>
+      </div>
+
+      <!-- 用户管理 -->
+      <div id="tab-users" class="tab-content active">
+        <div class="admin-card">
+          <div class="admin-card-head">
+            <div class="admin-card-icon" style="background:#ede9fe">👥</div>
+            <div>
+              <div class="admin-card-title">用户列表</div>
+            </div>
+            <button class="btn btn-primary btn-xs" style="margin-left:auto;flex-shrink:0" onclick="showAddUser()">+ 添加</button>
+          </div>
+          <div class="admin-card-body" id="admin-user-list"></div>
+        </div>
+      </div>
+
+      <!-- 周管理 -->
+      <div id="tab-weeks" class="tab-content">
+        <div class="admin-card">
+          <div class="admin-card-head">
+            <div class="admin-card-icon" style="background:#fef3c7">📁</div>
+            <div>
+              <div class="admin-card-title">所有周文件夹</div>
+            </div>
+          </div>
+          <div class="admin-card-body" id="admin-week-list"></div>
+        </div>
+      </div>
+
+      <!-- 上传记录 -->
+      <div id="tab-log" class="tab-content">
+        <div class="admin-card">
+          <div class="admin-card-head">
+            <div class="admin-card-icon" style="background:#d1fae5">📊</div>
+            <div>
+              <div class="admin-card-title">上传记录</div>
+            </div>
+          </div>
+          <div class="admin-card-body" id="admin-record-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ========== 底部周切换标签栏 ========== -->
+<div class="week-tabs hidden" id="week-tabs"></div>
+
+<!-- ========== Toast ========== -->
+<div id="toast"></div>
+
+<!-- ========== 图片预览 ========== -->
+<div class="modal hide" id="img-modal" onclick="closeModal(event)">
+  <button class="modal-close" onclick="closeModal()">✕</button>
+  <img class="modal-img" id="modal-img" src="" alt="预览" onclick="event.stopPropagation()" />
+</div>
+
+<!-- ========== 添加用户弹窗 ========== -->
+<div class="modal hide" id="add-user-modal" onclick="closeAddUser(event)">
+  <div class="modal-form" onclick="event.stopPropagation()">
+    <div class="modal-form-title">添加新用户</div>
+    <div class="alert alert-error hidden" id="add-user-alert"></div>
+    <div class="form-group">
+      <label class="form-label">显示名称</label>
+      <input type="text" id="new-display" class="form-control" placeholder="例如：张三" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">登录账号</label>
+      <input type="text" id="new-username" class="form-control" placeholder="登录用的账号名" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">登录密码</label>
+      <input type="text" id="new-password" class="form-control" placeholder="初始密码" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">角色</label>
+      <select id="new-role" class="form-control">
+        <option value="user">普通用户</option>
+        <option value="admin">管理员</option>
+      </select>
+    </div>
+    <div class="modal-form-actions">
+      <button class="btn btn-primary" style="flex:1" onclick="doAddUser()">确认添加</button>
+      <button class="btn btn-gray" onclick="closeAddUser()">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 全局状态
+// ============================================================
+let currentUser = null;
+let allWeeks = [];       // 全部周（管理员用）
+let recentWeeks = [];    // 近3周（用户用）
+let selectedWeek = null;
+let uploadQueue = [];
+let isUploading = false;
+let isAdmin = false;
+
+// ============================================================
+// 初始化
+// ============================================================
+document.addEventListener('DOMContentLoaded', async () => {
+  await checkAuth();
+});
+
+async function checkAuth() {
+  try {
+    const r = await fetch('/api/auth/status');
+    const d = await r.json();
+    if (d.loggedIn) showApp(d);
+  } catch(e) {}
+}
+
+function showApp(user) {
+  currentUser = user;
+  isAdmin = user.role === 'admin';
+
+  document.getElementById('login-page').style.display = 'none';
+  document.getElementById('app-page').classList.add('show');
+  document.getElementById('nav-right').style.display = 'flex';
+  document.getElementById('nav-role').textContent = user.role === 'admin' ? '管理员' : '普通用户';
+  document.getElementById('nav-role').className = 'role-chip ' + (isAdmin ? 'role-admin' : 'role-user');
+
+  if (isAdmin) {
+    document.getElementById('week-tabs').classList.add('hidden');
+    loadAdminPanel();
+  } else {
+    document.getElementById('week-tabs').classList.remove('hidden');
+    document.getElementById('admin-page').classList.remove('show');
+    document.getElementById('user-content').style.display = '';
+    loadUserPanel();
+  }
+}
+
+// ============================================================
+// 登录
+// ============================================================
+async function handleLogin(e) {
+  e.preventDefault();
+  const u = document.getElementById('f-user').value.trim();
+  const p = document.getElementById('f-pwd').value;
+  const btn = document.getElementById('login-btn');
+  const alert = document.getElementById('login-alert');
+  if (!u || !p) { showAlert('请输入账号和密码'); return; }
+
+  btn.disabled = true;
+  btn.textContent = '登录中...';
+  alert.classList.add('hidden');
+
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+    const d = await r.json();
+    if (d.success) {
+      toast('✅ 登录成功', 'success');
+      showApp(d);
+    } else {
+      showAlert(d.message);
+      document.getElementById('f-pwd').value = '';
+    }
+  } catch(err) { showAlert('网络错误，请检查网络连接'); }
+  finally { btn.disabled = false; btn.textContent = '登录'; }
+}
+
+async function logout() {
+  await fetch('/api/logout', { method: 'POST' });
+  location.reload();
+}
+
+function showAlert(msg) {
+  const el = document.getElementById('login-alert');
+  el.textContent = msg; el.classList.remove('hidden');
+}
+
+function togglePwd() {
+  const i = document.getElementById('f-pwd');
+  i.type = i.type === 'password' ? 'text' : 'password';
+}
+
+// ============================================================
+// 用户面板
+// ============================================================
+async function loadUserPanel() {
+  // 显示加载状态
+  document.getElementById('wh-title').textContent = '加载中...';
+  document.getElementById('wh-range').textContent = '正在获取数据...';
+  document.getElementById('wh-badges').innerHTML = '<span class="badge" style="background:#e2e8f0">⏳</span>';
+  
+  try {
+    const r = await fetch('/api/weeks');
+    if (!r.ok) throw new Error('请求失败: ' + r.status);
+    const d = await r.json();
+    
+    if (!d.success) {
+      toast('获取周数据失败，请刷新重试', 'error');
+      document.getElementById('wh-title').textContent = '加载失败';
+      document.getElementById('wh-range').textContent = d.message || '请刷新页面';
+      return;
+    }
+    
+    recentWeeks = d.weeks;
+    
+    if (!recentWeeks.length) {
+      toast('暂无周数据', 'warning');
+      document.getElementById('wh-title').textContent = '暂无数据';
+      document.getElementById('wh-range').textContent = '请联系管理员创建周文件夹';
+      return;
+    }
+
+    // 渲染底部标签栏
+    renderWeekTabs();
+
+    // 默认选中"上周"（本周的前一个）
+    // 找到本周的索引，然后选中上周
+    const today = new Date().toISOString().slice(0, 10);
+    let thisWeekIdx = -1;
+    for (let i = 0; i < recentWeeks.length; i++) {
+      if (today >= recentWeeks[i].week_start && today <= recentWeeks[i].week_end) {
+        thisWeekIdx = i;
+        break;
+      }
+    }
+    // 如果今天不在任何周内，找第一个未来的周作为本周
+    if (thisWeekIdx === -1) {
+      for (let i = 0; i < recentWeeks.length; i++) {
+        if (recentWeeks[i].week_start > today) {
+          thisWeekIdx = i;
+          break;
+        }
+      }
+    }
+    // 如果还是没找到，默认第一个为本周
+    if (thisWeekIdx === -1) thisWeekIdx = 0;
+
+    // 默认选中上周（本周索引 - 1）
+    let defaultIdx = thisWeekIdx > 0 ? thisWeekIdx - 1 : thisWeekIdx;
+    selectWeekByIndex(defaultIdx);
+  } catch(e) { 
+    console.error('加载失败:', e);
+    toast('加载失败: ' + e.message, 'error');
+    document.getElementById('wh-title').textContent = '加载失败';
+    document.getElementById('wh-range').textContent = '网络错误，请检查网络后刷新重试';
+  }
+}
+
+function renderWeekTabs() {
+  const container = document.getElementById('week-tabs');
+  if (!recentWeeks.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  // 根据日期计算标签
+  // 今天
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0, 10);
+  
+  // 找到"本周"的索引（今天在这个周范围内）
+  let thisWeekIdx = -1;
+  for (let i = 0; i < recentWeeks.length; i++) {
+    const w = recentWeeks[i];
+    if (todayStr >= w.week_start && todayStr <= w.week_end) {
+      thisWeekIdx = i;
+      break;
+    }
+  }
+  
+  // 如果今天不在任何一周内，找最近的未来周作为"本周"
+  if (thisWeekIdx === -1) {
+    for (let i = 0; i < recentWeeks.length; i++) {
+      if (recentWeeks[i].week_start > todayStr) {
+        thisWeekIdx = i;
+        break;
+      }
+    }
+  }
+  // 如果还是没找到，默认第一个为本周
+  if (thisWeekIdx === -1) thisWeekIdx = 0;
+  
+  // 生成标签
+  const labels = recentWeeks.map((w, i) => {
+    const diff = i - thisWeekIdx;
+    if (diff === 0) return '本周';
+    if (diff === -1) return '上周';
+    if (diff === 1) return '下周';
+    if (diff < 0) return `前${Math.abs(diff)}周`;
+    return `后${diff}周`;
+  });
+  
+  container.innerHTML = recentWeeks.map((w, i) => {
+    const isDone = w.my_status === 'completed';
+    const isActive = selectedWeek && selectedWeek.id === w.id;
+    return `
+      <button class="week-tab ${isActive ? 'active' : ''}" id="tab-${i}" onclick="selectWeekByIndex(${i})">
+        <span class="week-tab-icon">${isDone ? '✅' : '📷'}</span>
+        <span class="week-tab-label">${labels[i]}</span>
+        <span class="week-tab-sub">${fmtDateShort(w.week_start)}~${fmtDateShort(w.week_end)}</span>
+      </button>
+    `;
+  }).join('');
+}
+
+function selectWeekByIndex(idx) {
+  const w = recentWeeks[idx];
+  if (!w) return;
+
+  // 更新标签高亮
+  document.querySelectorAll('.week-tab').forEach((t, i) => {
+    t.classList.toggle('active', i === idx);
+  });
+
+  renderWeekContent(w);
+}
+
+function renderWeekContent(w) {
+  selectedWeek = w;
+  const isWeekDone = w.status === 'completed';
+  const isMyDone = w.my_status === 'completed';
+  const pendingCnt = w.pending_count;
+
+  // 周信息头部
+  document.getElementById('wh-title').textContent = w.folder_name;
+  document.getElementById('wh-range').textContent =
+    `${w.week_start.slice(5).replace('-','/')} ~ ${w.week_end.slice(5).replace('-','/')}（${pendingCnt}人待确认）`;
+
+  let badges = '';
+  badges += isWeekDone
+    ? '<span class="badge badge-done">✓ 已上传</span>'
+    : '<span class="badge badge-pending">⏳ 待上传</span>';
+  badges += isMyDone
+    ? '<span class="badge badge-my-yes">✓ 我已确认</span>'
+    : '<span class="badge badge-my-no">○ 未确认</span>';
+  document.getElementById('wh-badges').innerHTML = badges;
+
+  // 上传区状态
+  const uzWrap = document.getElementById('upload-zone-wrap');
+  const uz = document.getElementById('upload-zone');
+  if (isWeekDone) {
+    uz.className = 'upload-zone disabled-zone';
+    document.getElementById('uz-icon').textContent = '✅';
+    document.getElementById('uz-title').textContent = '本周已上传完毕';
+    document.getElementById('uz-hint').textContent = '所有用户已确认，文件夹已打包发送邮件';
+    uz.onclick = null;
+  } else if (isMyDone) {
+    uz.className = 'upload-zone done-zone';
+    document.getElementById('uz-icon').textContent = '✅';
+    document.getElementById('uz-title').textContent = '本周已完成确认';
+    document.getElementById('uz-hint').textContent = '可继续追加上传，或等待其他人完成';
+    uz.onclick = () => document.getElementById('file-input').click();
+  } else {
+    uz.className = 'upload-zone';
+    document.getElementById('uz-icon').textContent = '🖼️';
+    document.getElementById('uz-title').textContent = '点击选择图片';
+    document.getElementById('uz-hint').textContent = '支持 JPG、PNG、GIF、WebP，单文件最大 20MB，最多 20 张';
+    uz.onclick = () => document.getElementById('file-input').click();
+  }
+
+  // 确认完成面板
+  const confirmSection = document.getElementById('confirm-section');
+  if (isWeekDone) {
+    confirmSection.innerHTML = '';
+  } else if (isMyDone) {
+    confirmSection.innerHTML = `
+      <div class="confirm-panel all-done">
+        <div class="confirm-panel-title">✅ 你已确认本周上传完成</div>
+        <div class="confirm-panel-desc">等待其他人完成，全部确认后系统自动打包发送邮件</div>
+      </div>
+    `;
+  } else {
+    confirmSection.innerHTML = `
+      <div class="confirm-panel">
+        <div class="confirm-panel-title">⚠️ 确认上传完成</div>
+        <div class="confirm-panel-desc">确认后不可撤回。请确保所有照片已上传。当前 ${pendingCnt} 人待确认。</div>
+        <button class="btn btn-success" onclick="confirmComplete()">✅ 确认完成本周上传</button>
+      </div>
+    `;
+  }
+
+  // 加载我的图片
+  loadMyImages();
+}
+
+async function loadMyImages() {
+  if (!selectedWeek) return;
+  try {
+    const r = await fetch(`/api/images/${selectedWeek.id}`);
+    const d = await r.json();
+    const gallery = document.getElementById('my-gallery');
+    const countEl = document.getElementById('gallery-count');
+
+    if (!d.images || d.images.length === 0) {
+      gallery.innerHTML = `
+        <div class="gallery-empty">
+          <div class="gallery-empty-icon">📷</div>
+          <div class="gallery-empty-text">还没有上传照片</div>
+        </div>`;
+      countEl.textContent = '';
+      return;
+    }
+    countEl.textContent = `${d.images.length} 张`;
+    gallery.innerHTML = d.images.map(img => `
+      <div class="gallery-item" onclick="previewImg('${img.url}', event)">
+        <img class="gallery-img" src="${img.url}" alt="${img.filename}" loading="lazy" />
+        <div class="gallery-over">
+          <button class="g-btn" onclick="previewImg('${img.url}', event)" title="预览">🔍</button>
+          <button class="g-btn del" onclick="deleteImg('${img.filename}', event)" title="删除">🗑</button>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {}
+}
+
+async function confirmComplete() {
+  if (!selectedWeek) return;
+  try {
+    const r = await fetch(`/api/weeks/${selectedWeek.id}/complete`, { method: 'POST' });
+    const d = await r.json();
+    if (d.success) {
+      if (d.all_completed) {
+        toast('✅ 所有人已完成！正在打包发送邮件...', 'success');
+        setTimeout(() => location.reload(), 3000);
+      } else {
+        toast(`已确认完成，${d.pending_count} 人仍在等待`, 'info');
+        await loadUserPanel();
+      }
+    } else {
+      toast('❌ ' + d.message, 'error');
+    }
+  } catch(e) { toast('❌ 网络错误', 'error'); }
+}
+
+async function deleteImg(filename, e) {
+  e.stopPropagation();
+  if (!confirm(`确认删除 "${filename}"？`)) return;
+  try {
+    const r = await fetch(`/api/images/${selectedWeek.id}/${encodeURIComponent(filename)}`, { method: 'DELETE' });
+    const d = await r.json();
+    if (d.success) { toast('已删除', 'info'); await loadMyImages(); }
+    else toast('❌ ' + d.message, 'error');
+  } catch(e) { toast('❌ 网络错误', 'error'); }
+}
+
+// ============================================================
+// 文件上传
+// ============================================================
+function handleFileSelect(e) {
+  addFiles(Array.from(e.target.files));
+  e.target.value = '';
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+  if (!files.length) { toast('请拖入图片文件', 'error'); return; }
+  addFiles(files);
+}
+function handleDragOver(e) { e.preventDefault(); }
+function handleDragLeave() {}
+
+function addFiles(files) {
+  const allowed = ['image/jpeg','image/jpg','image/png','image/gif','image/webp','image/bmp'];
+  let added = 0;
+  files.forEach(f => {
+    if (!allowed.includes(f.type)) return;
+    if (f.size > 20*1024*1024) { toast(`"${f.name}" 超过20MB`, 'error'); return; }
+    if (uploadQueue.length >= 20) { toast('最多同时上传20张', 'error'); return; }
+    uploadQueue.push({ id: Date.now() + Math.random(), file: f, status: 'pending' });
+    added++;
+  });
+  if (added > 0) toast(`已加入 ${added} 张图片`, 'info');
+  renderQueue();
+}
+
+function removeFromQueue(id) {
+  uploadQueue = uploadQueue.filter(i => i.id !== id);
+  renderQueue();
+}
+
+function clearQueue() {
+  uploadQueue = [];
+  renderQueue();
+}
+
+function renderQueue() {
+  const wrap = document.getElementById('upload-queue-wrap');
+  const list = document.getElementById('queue-list');
+  if (!uploadQueue.length) { wrap.classList.add('hidden'); return; }
+  wrap.classList.remove('hidden');
+  list.innerHTML = uploadQueue.map(item => `
+    <div class="queue-item" id="qi-${item.id}">
+      <img class="queue-thumb" src="${URL.createObjectURL(item.file)}" alt="" />
+      <div class="queue-info">
+        <div class="queue-name">${item.file.name}</div>
+        <div class="queue-size">${formatSize(item.file.size)}</div>
+      </div>
+      <button class="queue-del" onclick="removeFromQueue(${item.id})">✕</button>
+    </div>
+  `).join('');
+}
+
+async function startUpload() {
+  const pending = uploadQueue.filter(i => i.status === 'pending');
+  if (!pending.length) { toast('没有待上传的文件', 'info'); return; }
+  if (!selectedWeek || selectedWeek.status === 'completed') { toast('当前周不允许上传', 'error'); return; }
+  if (isUploading) return;
+
+  isUploading = true;
+  const btn = document.getElementById('do-upload-btn');
+  const pbar = document.getElementById('progress-bar');
+  const pfill = document.getElementById('progress-fill');
+  btn.disabled = true;
+  document.getElementById('upload-btn-text').innerHTML = '<span class="spinner"></span>';
+  pbar.style.display = 'block';
+  pfill.style.width = '0%';
+
+  const formData = new FormData();
+  pending.forEach(i => formData.append('images', i.file));
+  formData.append('week_id', selectedWeek.id);
+
+  try {
+    // 模拟进度
+    let fake = 0;
+    const fakeInt = setInterval(() => {
+      fake = Math.min(fake + Math.random() * 15, 80);
+      pfill.style.width = fake + '%';
+    }, 200);
+
+    const r = await fetch('/api/upload', { method: 'POST', body: formData });
+    clearInterval(fakeInt);
+    pfill.style.width = '100%';
+
+    const d = await r.json();
+    if (d.success) {
+      toast(`✅ 上传成功 ${d.files.length} 张`, 'success');
+      setTimeout(() => {
+        uploadQueue = [];
+        pbar.style.display = 'none';
+        renderQueue();
+        loadMyImages();
+        // 更新周状态
+        if (selectedWeek && !selectedWeek.status) {
+          loadUserPanel();
+        }
+      }, 800);
+    } else {
+      toast('❌ ' + d.message, 'error');
+      pbar.style.display = 'none';
+    }
+  } catch(e) {
+    toast('❌ 上传失败', 'error');
+    pbar.style.display = 'none';
+  } finally {
+    isUploading = false;
+    btn.disabled = false;
+    document.getElementById('upload-btn-text').textContent = '上传';
+  }
+}
+
+// ============================================================
+// 图片预览
+// ============================================================
+function previewImg(url, e) {
+  if (e) e.stopPropagation();
+  document.getElementById('modal-img').src = url;
+  document.getElementById('img-modal').classList.remove('hide');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(e) {
+  if (e && e.target.id !== 'img-modal' && e.target.className !== 'modal-close') return;
+  document.getElementById('img-modal').classList.add('hide');
+  document.body.style.overflow = '';
+}
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal({ target: document.getElementById('img-modal') });
+});
+
+// ============================================================
+// 管理员面板
+// ============================================================
+async function loadAdminPanel() {
+  document.getElementById('user-content').style.display = 'none';
+  document.getElementById('admin-page').classList.add('show');
+  loadAdminUsers();
+  loadAdminWeeks();
+  loadAdminRecords();
+}
+
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('tab-btn-' + id.replace('tab-', '')).classList.add('active');
+}
+
+async function loadAdminUsers() {
+  try {
+    const r = await fetch('/api/admin/users');
+    const d = await r.json();
+    if (!d.success) return;
+    const el = document.getElementById('admin-user-list');
+    el.innerHTML = d.users.map(u => `
+      <div class="admin-row">
+        <div class="admin-row-info">
+          <div class="admin-row-name">${u.display_name}</div>
+          <div class="admin-row-sub">@${u.username}</div>
+        </div>
+        <span class="role-chip ${u.role === 'admin' ? 'role-admin' : 'role-user'}">${u.role === 'admin' ? '管理员' : '用户'}</span>
+        ${u.role !== 'admin' ? `<button class="btn-xs btn-xs-danger" onclick="resetUser('${u.id}')">删除</button>` : ''}
+      </div>
+    `).join('') || '<div style="text-align:center;color:var(--gray-400);padding:16px">暂无用户</div>';
+  } catch(e) {}
+}
+
+async function loadAdminWeeks() {
+  try {
+    const r = await fetch('/api/weeks');
+    const d = await r.json();
+    if (!d.success) return;
+    const el = document.getElementById('admin-week-list');
+    el.innerHTML = d.weeks.map(w => `
+      <div class="admin-row">
+        <div class="admin-row-info">
+          <div class="admin-row-name">${w.folder_name}</div>
+          <div class="admin-row-sub">${w.week_start} ~ ${w.week_end}</div>
+        </div>
+        <span class="badge ${w.status === 'completed' ? 'badge-done' : 'badge-pending'}">${w.status === 'completed' ? '已上传' : '待上传'}</span>
+        <span style="font-size:12px;color:var(--gray-500)">${w.completed_count}/${w.completed_count + w.pending_count}</span>
+        <button class="btn-xs btn-xs-success" onclick="manualPackage('${w.id}')">📦</button>
+        <button class="btn-xs btn-xs-danger" onclick="resetWeek('${w.id}')">🔄</button>
+      </div>
+    `).join('') || '<div style="text-align:center;color:var(--gray-400);padding:16px">暂无周记录</div>';
+  } catch(e) {}
+}
+
+async function loadAdminRecords() {
+  try {
+    const r = await fetch('/api/weeks');
+    const d = await r.json();
+    if (!d.success) return;
+    const el = document.getElementById('admin-record-list');
+    el.innerHTML = d.weeks.flatMap(w =>
+      (w.records || []).map(r => `
+        <div class="admin-row">
+          <div class="admin-row-info">
+            <div class="admin-row-name">${r.display_name}</div>
+            <div class="admin-row-sub">${w.folder_name} · ${r.completed_at ? fmtDT(r.completed_at) : '未确认'}</div>
+          </div>
+          <span class="badge ${r.status === 'completed' ? 'badge-done' : 'badge-pending'}">${r.status === 'completed' ? '已确认' : '未确认'}</span>
+        </div>
+      `)
+    ).join('') || '<div style="text-align:center;color:var(--gray-400);padding:16px">暂无记录</div>';
+  } catch(e) {}
+}
+
+async function manualPackage(id) {
+  if (!confirm('确认手动打包并发送邮件？')) return;
+  try {
+    const r = await fetch(`/api/weeks/${id}/package`, { method: 'POST' });
+    const d = await r.json();
+    if (d.success) { toast('✅ 打包完成，邮件已发送', 'success'); loadAdminWeeks(); }
+    else toast('❌ ' + d.message, 'error');
+  } catch(e) { toast('❌ 网络错误', 'error'); }
+}
+
+async function resetWeek(id) {
+  if (!confirm('确认重置该周？所有确认记录将被清除。')) return;
+  try {
+    const r = await fetch(`/api/weeks/${id}/reset`, { method: 'POST' });
+    const d = await r.json();
+    if (d.success) { toast('已重置', 'info'); loadAdminWeeks(); loadAdminRecords(); }
+    else toast('❌ ' + d.message, 'error');
+  } catch(e) { toast('❌ 网络错误', 'error'); }
+}
+
+// ============================================================
+// 添加用户
+// ============================================================
+function showAddUser() {
+  document.getElementById('add-user-modal').classList.remove('hide');
+  document.getElementById('add-user-alert').classList.add('hidden');
+  document.getElementById('new-display').value = '';
+  document.getElementById('new-username').value = '';
+  document.getElementById('new-password').value = '';
+  document.getElementById('new-role').value = 'user';
+}
+
+function closeAddUser(e) {
+  if (e && e.target.id !== 'add-user-modal') return;
+  document.getElementById('add-user-modal').classList.add('hide');
+}
+
+async function doAddUser() {
+  const displayName = document.getElementById('new-display').value.trim();
+  const username = document.getElementById('new-username').value.trim();
+  const password = document.getElementById('new-password').value;
+  const role = document.getElementById('new-role').value;
+  if (!displayName || !username || !password) {
+    const el = document.getElementById('add-user-alert');
+    el.textContent = '请填写所有字段'; el.classList.remove('hidden'); return;
+  }
+  try {
+    const r = await fetch('/api/admin/users', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ displayName, username, password, role })
+    });
+    const d = await r.json();
+    if (d.success) {
+      toast('✅ 用户添加成功', 'success');
+      closeAddUser();
+      loadAdminUsers();
+    } else {
+      const el = document.getElementById('add-user-alert');
+      el.textContent = d.message; el.classList.remove('hidden');
+    }
+  } catch(e) {
+    const el = document.getElementById('add-user-alert');
+    el.textContent = '网络错误'; el.classList.remove('hidden');
+  }
+}
+
+// ============================================================
+// 工具函数
+// ============================================================
+function formatSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+  return (b/1024/1024).toFixed(1) + ' MB';
+}
+
+function fmtDateShort(d) {
+  if (!d) return '';
+  return `${d.slice(5,7)}/${d.slice(8,10)}`;
+}
+
+function fmtDT(iso) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function toast(msg, type = 'info') {
+  const c = document.getElementById('toast');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateY(8px)';
+    setTimeout(() => t.remove(), 250);
+  }, 3000);
+}
+</script>
+</body>
+</html>

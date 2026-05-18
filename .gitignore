@@ -1,0 +1,30 @@
+# 依赖
+node_modules/
+
+# 数据文件（包含用户上传的图片和数据库，禁止提交）
+data/
+uploads/
+
+# 日志
+*.log
+tunnel.log
+
+# 环境变量（包含敏感信息）
+.env
+.env.local
+.env.production
+
+# 临时文件
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# 编译产物
+dist/
+build/
+
+# 备份文件
+*.zip
+*.bak
+*.backup
