@@ -5,9 +5,17 @@
 
 const Database = require('better-sqlite3');
 const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 const DB_PATH = path.join(__dirname, '..', 'data', 'uploader.db');
+
+// UUID 兼容层：优先用内置 crypto.randomUUID（Node 14.17+），兜底 uuid/v4
+let uuidv4;
+try {
+  uuidv4 = crypto.randomUUID;
+} catch (e) {
+  uuidv4 = require('uuid/v4');
+}
 
 // 确保 data 目录存在
 const fs = require('fs');

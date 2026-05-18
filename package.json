@@ -11,7 +11,7 @@
     "test:security": "node tests/security.test.js"
   },
   "dependencies": {
-    "archiver": "^8.0.0",
+    "archiver": "^5.3.1",
     "better-sqlite3": "^12.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
@@ -21,6 +21,6 @@
     "multer": "^1.4.5-lts.1",
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.7",
-    "uuid": "^14.0.0"
+    "uuid": "^9.0.0"
   }
 }
